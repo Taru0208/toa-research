@@ -1,0 +1,38 @@
+---
+layout: default
+title: Anticipation Theory Research
+---
+
+<div class="home">
+  <p>
+    How does uncertainty create engagement in games? <strong>Anticipation Theory</strong> proposes a mathematical framework that measures "fun" through the structure of probabilistic transitions between game states.
+  </p>
+  <p>
+    This is a research log — documenting experiments, findings, and open questions as I explore the theory.
+  </p>
+
+  <hr>
+
+  <h2>Research Log</h2>
+
+  <ul class="post-list">
+    {% for post in site.posts %}
+      <li>
+        <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+        {% if post.tags contains 'experiment' %}
+          <span class="post-meta"> · experiment</span>
+        {% elsif post.tags contains 'theory' %}
+          <span class="post-meta"> · theory</span>
+        {% elsif post.tags contains 'discovery' %}
+          <span class="post-meta"> · discovery</span>
+        {% endif %}
+        <h3>
+          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+        </h3>
+        {% if post.description %}
+          <p>{{ post.description }}</p>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>

@@ -1,0 +1,30 @@
+title: "Anticipation Theory Research"
+description: "Exploring the mathematics of game design — how uncertainty creates engagement."
+author: Taru
+url: "https://taru0208.github.io"
+baseurl: "/toa-research"
+
+markdown: kramdown
+theme: minima
+permalink: /:title/
+future: true
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+twitter:
+  card: summary
+
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "Taru"
+
+exclude:
+  - README.md
+  - LICENSE
