@@ -68,8 +68,21 @@ Systems that maintain independence — poker hands, individual combat rounds, da
 
 In other words: engagement grows without bound exactly when the system never "figures itself out."
 
+## Entropy Evidence
+
+We measured Shannon entropy at every non-terminal state across 4 game classes:
+
+| Model | Per-State Entropy | Uniform? | GDS Growth |
+|:---|:---:|:---:|:---|
+| Best-of-N | 1.000 bits | **Constant** | UNBOUND (+0.011/depth) |
+| HP Game | 1.000 bits | **Constant** | UNBOUND (+0.017/depth) |
+| GoldGame | 1.809 bits | **Constant** | UNBOUND (+0.009/depth) |
+| Normal Quiz | 0.668→0.001 | **Decaying** | ANTI-UNBOUND (-0.003/depth) |
+
+The critical property is not *high* entropy but *uniform* entropy. GoldGame's 68/32 split gives only 1.81 of a maximum 2.0 bits — but it's the *same* at every state, because probabilities don't depend on accumulated gold. The quiz's entropy collapses because knowledgeable students answer with near-certainty.
+
 ## Code
 
-Full experiment: [`python/experiments/convergence_test.py`](https://github.com/Taru0208/anticipation-theory/tree/main/python/experiments/convergence_test.py)
+Experiments: [`convergence_test.py`](https://github.com/Taru0208/anticipation-theory/tree/main/python/experiments/convergence_test.py) and [`entropy_preservation.py`](https://github.com/Taru0208/anticipation-theory/tree/main/python/experiments/entropy_preservation.py)
 
-Three models, parameter sweeps across quiz lengths 3-19, with regression tests.
+59 tests total, parameter sweeps across quiz lengths and entropy profiles across 4 game classes.
