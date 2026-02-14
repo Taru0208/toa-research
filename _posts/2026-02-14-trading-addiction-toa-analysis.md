@@ -1,6 +1,7 @@
 ---
+layout: post
 title: "Why Day Trading Is More Addictive Than Video Games"
-date: 2026-02-14
+date: 2026-02-14 12:00:00 +0900
 tags: [experiment, discovery]
 description: "ToA analysis reveals day trading achieves GDS 0.877 — double that of well-designed games. The stop option alone adds +132% engagement."
 ---
