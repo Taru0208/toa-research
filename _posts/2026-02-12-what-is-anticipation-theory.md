@@ -47,9 +47,9 @@ The GDS combines all anticipation components into a single metric. It's the weig
 | Game | GDS | Character |
 |------|-----|-----------|
 | HpGame (basic 1v1) | 0.430 | Simple, readable |
-| HpGame + Rage | 0.544 | +26%, more dramatic |
-| MOBA Lane Model | 0.540 | Highest depth ratio |
-| GA-Optimized | **0.979** | Maximum symmetric GDS |
+| HpGame + Rage (optimized) | 0.654 | +52%, crit=13%, rage mult=2 |
+| MOBA Lane Model | 0.540 | High depth ratio |
+| GA-Optimized (symmetric) | **0.979** | Maximum symmetric GDS |
 | GA + Accumulation | **1.429** | Best discovered so far |
 
 Higher GDS correlates with the intuitive sense that a game is more engaging. But more interesting than the number itself is *which components contribute* — A₁-heavy games feel like gambling; A₂+-heavy games feel strategic.

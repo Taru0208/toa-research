@@ -3,7 +3,7 @@ layout: post
 title: "Genetic Algorithms Find the Optimal Game"
 date: 2026-02-12
 tags: [experiment, discovery]
-description: "Using evolutionary optimization to discover game mechanics that maximize GDS. The best game found scores 1.429 — 159% above HpGame_Rage."
+description: "Using evolutionary optimization to discover game mechanics that maximize GDS. The best game found scores 1.429 — 232% above baseline HpGame."
 ---
 
 Instead of designing games by hand and measuring their GDS, what if we let an algorithm *search* for the best game?
@@ -81,4 +81,4 @@ Three principles emerge from the optimization:
 
 Is GDS = 1.429 the theoretical maximum for fair two-player games? Or can more complex accumulation mechanics push even higher?
 
-The GA has only explored a small corner of the design space. More complex genomes (multiple resources, conditional mechanics, asymmetric-but-fair designs) might find games with even higher engagement. But 1.429 is already nearly 3× the score of professionally designed game mechanics (HpGame_Rage: 0.544).
+The GA has only explored a small corner of the design space. More complex genomes (multiple resources, conditional mechanics, asymmetric-but-fair designs) might find games with even higher engagement. But 1.429 is already 2.2× the optimized HpGame_Rage benchmark (0.654) and 3.3× the baseline HpGame (0.430).

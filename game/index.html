@@ -626,10 +626,10 @@ function resolveAction(attacker, defender, action, isPlayer) {
 
   if (action === 'guard') {
     attacker.guarding = true;
-    attacker.rage += 1;
+    // Guard no longer gives rage — prevents turtle-to-oneshot exploit
     events.push({
       type: 'guard', isPlayer,
-      log: `<span class="log-guard">${name} raised guard! (+1 rage)</span>`
+      log: `<span class="log-guard">${name} raised guard!</span>`
     });
     return events;
   }
@@ -888,7 +888,7 @@ function processNextEvent() {
   if (ev.type === 'guard') {
     const anim = ev.isPlayer ? playerAnim : enemyAnim;
     spawnParticles(anim.baseX, anim.baseY - 15, '#50e080', 8, 2, 20, 3);
-    spawnFloatingText(anim.baseX, anim.baseY - 65, 'GUARD +1', '#50e080', 20);
+    spawnFloatingText(anim.baseX, anim.baseY - 65, 'GUARD', '#50e080', 20);
     playSound('guard');
   }
 
@@ -1032,8 +1032,8 @@ function drawTitle() {
   ctx.font = '13px "Segoe UI", system-ui, sans-serif';
   ctx.fillStyle = '#3a4868';
   const tips = [
-    'Strike: reliable damage  |  Heavy: risky power  |  Rage: spend rage for burst  |  Guard: block + gain rage',
-    'Taking damage builds rage. Use it wisely.',
+    'Strike: reliable damage  |  Heavy: risky power  |  Rage: spend rage for burst  |  Guard: block next hit',
+    'Taking & dealing damage builds rage. Use it wisely.',
     'Press SPACE or click PLAY to begin'
   ];
   tips.forEach((tip, i) => ctx.fillText(tip, W / 2, 400 + i * 22));
@@ -1104,7 +1104,7 @@ function updateButtons() {
     { id: 'strike', label: 'Strike [Q]', sub: '1 dmg, sure hit', cls: 'btn-strike' },
     { id: 'heavy', label: 'Heavy [W]', sub: '2 dmg, 50% hit', cls: 'btn-heavy' },
     { id: 'rage', label: 'Rage [E]', sub: `1+${player.rage} dmg`, cls: 'btn-rage' },
-    { id: 'guard', label: 'Guard [R]', sub: 'block, +1 rage', cls: 'btn-guard' },
+    { id: 'guard', label: 'Guard [R]', sub: 'block next hit', cls: 'btn-guard' },
   ];
 
   for (const a of actions) {

@@ -1,63 +1,97 @@
 ---
 layout: post
-title: "Rage Mechanics and Emergent Narrative"
+title: "Rage Mechanics: The Optimal Configuration"
 date: 2026-02-12
 tags: [experiment, discovery]
-description: "Adding a rage/crit system to a simple combat game reveals something unexpected: optimal mechanics naturally create narrative arcs."
+description: "Systematic optimization of rage/crit mechanics reveals crit=13%, damage multiplier=2, and non-spending rage as the optimal combat configuration — a 52% improvement over baseline."
 ---
 
-HpGame is the simplest 1v1 combat model in ToA: two players with HP, each turn one randomly takes damage. GDS = 0.430. Functional, but flat.
+HpGame is the simplest 1v1 combat model in ToA: two players with HP=5, each turn producing one of three random outcomes (P1 hits, both hit, P2 hits), each with 1/3 probability. GDS = 0.430. Functional, but flat.
 
 HpGame_Rage adds two mechanics:
-- **Critical hits** (13% chance): deal double damage
-- **Rage buildup**: getting hit increases your crit chance
+- **Critical hits** (configurable chance): deal bonus damage scaled by accumulated rage (`1 + rage × multiplier`)
+- **Rage buildup**: rage counter increases when dealing or receiving damage
 
-The result: GDS jumps to 0.544 — a 26.5% improvement. But the *how* is more interesting than the number.
+Neither player makes choices — all outcomes are probabilistic. The game tests whether structural mechanics alone can improve engagement.
 
-## The Narrative Discovery
+## Systematic Configuration Search
 
-I simulated 10,000 random games for both models and tracked the A₁ value at each game step. The question: **what does the "excitement curve" look like over the course of a game?**
+The original C++ repo compared 8 different configurations of the rage system. We reproduced this in Python:
 
-### HpGame (Basic)
-- Starts at moderate excitement (A₁ ≈ 0.157)
-- Gradually rises as HP drops
-- Linear, predictable arc
+| Configuration | GDS | Change |
+|:---|:---:|:---:|
+| Baseline (no rage, crit=13%) | 0.427 | — |
+| Rage mult=1, spend, on_dmg | 0.522 | +22% |
+| Rage mult=1, nospend, on_dmg | 0.541 | +27% |
+| Rage mult=1, spend, on_recv | 0.428 | +0.3% |
+| Rage mult=1, nospend, on_recv | 0.432 | +1% |
+| Rage mult=1, nospend, on_both | 0.551 | +29% |
+| Rage mult=2, spend, on_both | 0.648 | +52% |
+| **Rage mult=2, nospend, on_both** | **0.654** | **+53%** |
 
-### HpGame_Rage
-- Starts at *lower* excitement (A₁ ≈ 0.075)
-- But the **arc variance is 10× higher** (0.0071 vs 0.0007)
+Three clear insights emerge:
 
-This means rage mechanics create games where the excitement trajectory is *wildly different* each playthrough. Some games build slowly then explode. Others swing dramatically from the start. The variety itself becomes part of the experience.
+**1. Damage multiplier matters most.** Going from mult=1 to mult=2 produces the biggest jump (0.551 → 0.654). Higher rage means more devastating crits, which increases the variance of future outcomes — exactly what A₂+ captures.
 
-## Optimal Crit Probability: 13%
+**2. Non-spending rage > spending.** When rage resets to zero after a crit (`spend`), the mechanic is one-shot. When rage accumulates (`nospend`), it compounds — creating accelerating tension as the game progresses. This persistent accumulation is what creates the narrative arc.
 
-Sweeping crit chance from 0% to 40%:
+**3. Attack triggers > receive triggers.** Gaining rage from dealing damage (0.541) helps far more than gaining from receiving damage (0.432). The "on_both" configuration is slightly better still (0.551), but the asymmetry shows that offensive momentum is structurally more engaging.
 
-| Crit % | GDS | Character |
-|--------|-----|-----------|
-| 0% | 0.430 | No surprises |
-| 5% | 0.515 | Mild spice |
-| **13%** | **0.551** | **Optimal** |
-| 20% | 0.540 | Slightly chaotic |
-| 40% | 0.462 | Too random |
+## Optimal Critical Hit Probability
 
-The curve is inverted-U shaped. Too little randomness = boring. Too much = arbitrary. 13% hits the sweet spot where critical hits are rare enough to be dramatic but common enough to plan around.
+Sweeping crit chance from 0% to 40% with the optimized config (mult=2, nospend, on_both):
 
-## The GameFlow Connection
+| Crit % | GDS |
+|:---:|:---:|
+| 0% | 0.430 |
+| 5% | 0.562 |
+| 10% | 0.639 |
+| **13-14%** | **0.654-0.655** |
+| 20% | 0.635 |
+| 30% | 0.558 |
+| 40% | 0.481 |
 
-Sweetser & Wyeth (2005) defined 8 qualitative elements of game enjoyment based on Csikszentmihalyi's Flow theory. I mapped these to ToA metrics:
+The curve is inverted-U shaped. The peak at 13-14% means crits are rare enough to be dramatic but common enough to influence strategy. Below 10%, rage barely activates. Above 20%, every turn is a crit and the mechanic loses its specialness.
 
-| GameFlow Element | ToA Mapping | HpGame | Rage |
-|-----------------|-------------|---------|------|
-| Challenge | D₀ variance | Low | High |
-| Player Skills | Action space | 3 choices | 8 choices |
-| Concentration | "Flow zone" states | 28% | **50.6%** |
-| Boring states | A₁ < 0.1 | 36% | **1.8%** |
+The original C++ repo identified 13% as the optimum with a grid search — our Python reproduction confirms this, with the peak spanning 13-14% (the difference between them is less than 0.002).
 
-The rage mechanic nearly eliminates boring states (36% → 1.8%) and doubles the proportion of "flow zone" states. These aren't designed outcomes — they emerge from the mathematics of the rage system.
+## The 52% Improvement
 
-## The Lesson
+The fully optimized configuration achieves GDS = 0.654 compared to the baseline HpGame's 0.430 — a **52% improvement**. This matches the original C++ result (GDS 0.653, +51.8%) with less than 0.2% numerical difference.
 
-Game designers often add mechanics based on intuition: "crits feel exciting." ToA shows *why* they work and *how much* to add. The 13% optimal isn't obvious from playtesting — you'd need thousands of games to notice the inverted-U. But ToA finds it analytically.
+For reference:
 
-More importantly: **well-designed mechanics create narrative structure for free**. You don't need scripted dramatic arcs if your system's probability structure naturally produces them.
+| Game | GDS | States |
+|:---|:---:|:---:|
+| HpGame (baseline) | 0.430 | 36 |
+| HpGame_Rage (default config, crit=10%, mult=1) | 0.544 | 318 |
+| HpGame_Rage (optimized, crit=13%, mult=2) | **0.654** | 318 |
+| CoinToss (theoretical max per-turn) | 0.500 | 3 |
+
+The optimized rage game exceeds the single-turn theoretical maximum — demonstrating that multi-turn structural mechanics generate more total engagement than any single moment of perfect uncertainty.
+
+## Code
+
+All results are reproducible with the [Python port](https://github.com/Taru0208/anticipation-theory):
+
+```python
+from toa.engine import analyze
+from toa.games.hpgame_rage import HpGameRage
+
+config = HpGameRage.Config(
+    critical_chance=0.13,
+    rage_spendable=False,
+    rage_dmg_multiplier=2,
+    rage_increase_on_attack_dmg=True,
+    rage_increase_on_received_dmg=True,
+)
+result = analyze(
+    initial_state=HpGameRage.initial_state(),
+    is_terminal=HpGameRage.is_terminal,
+    get_transitions=HpGameRage.get_transitions,
+    compute_intrinsic_desire=HpGameRage.compute_intrinsic_desire,
+    config=config,
+    nest_level=5,
+)
+print(f"GDS: {result.game_design_score:.3f}")  # 0.654
+```

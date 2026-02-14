@@ -44,7 +44,7 @@ Each game model implements a simple protocol: define states, transitions, and te
 | CoinToss | 3 | 0.500 | A₁ theoretical max |
 | RPS | 4 | 0.471 | Three-outcome ceiling |
 | HpGame | 25 | 0.430 | Baseline 1v1 combat |
-| HpGame_Rage | 75 | 0.544 | +26% with crit/rage |
+| HpGame_Rage | 318 | 0.544 (default) / 0.654 (optimized) | +26% / +52% with crit/rage |
 | GoldGame | 14 | 0.369 | Economic competition |
 | GoldGame_Critical | 20 | 0.348 | Steal mechanic (lower!) |
 | TwoTurnGame | 4 | varies | Parameter optimization |

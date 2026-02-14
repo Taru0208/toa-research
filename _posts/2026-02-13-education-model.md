@@ -47,7 +47,7 @@ This maps to a real design tension: partial credit feels fairer, but pass/fail i
 
 ## Finding 3: Forgetting Kills Engagement (-40%)
 
-Adding knowledge decay (lose 1 level on wrong answers) **reduces GDS by 40%**. This surprised us — in game design, setbacks often add drama (rage mechanics increased HpGame GDS by 26%).
+Adding knowledge decay (lose 1 level on wrong answers) **reduces GDS by 40%**. This surprised us — in game design, setbacks often add drama (rage mechanics increased HpGame GDS by 26-52% depending on configuration).
 
 The difference: in games, setbacks create new possible paths (HP yo-yos). In learning, forgetting just extends the path without adding meaningful branching — the student needs to re-learn the same material, reducing net progress.
 
@@ -101,7 +101,7 @@ This parallels the Choice Paradox in games (Nash equilibrium reduces GDS by 5-7%
 |:---|:---|
 | HP (1,1) is most exciting | Knowledge near threshold, final questions most exciting |
 | Nash equilibrium reduces GDS | Adaptive difficulty slightly reduces GDS |
-| Rage mechanics add +26% GDS | Forgetting mechanics reduce GDS by -40% |
+| Rage mechanics add +26-52% GDS | Forgetting mechanics reduce GDS by -40% |
 | GDS grows with depth (Unbound) | GDS shrinks with length (Anti-Unbound) |
 | Binary win/lose | Pass/fail > partial credit |
 
