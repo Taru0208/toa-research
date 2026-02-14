@@ -12,877 +12,1499 @@ layout: null
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #0f1117;
+  background: #080a12;
   color: #e0e0e0;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .header {
   text-align: center;
-  padding: 2rem 1rem 1rem;
-  border-bottom: 1px solid #2a2d3a;
+  padding: 1.5rem 1rem 0.8rem;
+  border-bottom: 1px solid #1a1d2a;
 }
-.header h1 { font-size: 1.6rem; color: #fff; margin-bottom: 0.3rem; }
-.header p { color: #888; font-size: 0.9rem; }
+.header h1 { font-size: 1.5rem; color: #fff; margin-bottom: 0.2rem; letter-spacing: -0.02em; }
+.header p { color: #666; font-size: 0.82rem; }
 
 .tabs {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
-  padding: 1rem;
-  flex-wrap: wrap;
+  padding: 0.8rem;
 }
 .tab {
-  padding: 0.5rem 1.2rem;
-  border: 1px solid #2a2d3a;
+  padding: 0.45rem 1.1rem;
+  border: 1px solid #1e2132;
   border-radius: 6px;
   cursor: pointer;
   background: transparent;
-  color: #888;
-  font-size: 0.85rem;
+  color: #666;
+  font-size: 0.82rem;
   transition: all 0.2s;
+  font-family: inherit;
 }
-.tab:hover { border-color: #555; color: #ccc; }
-.tab.active { border-color: #6c8cff; color: #6c8cff; background: #1a1d2e; }
+.tab:hover { border-color: #444; color: #aaa; }
+.tab.active { border-color: #5a7aef; color: #7a9aff; background: #12152a; }
 
-.game-container { display: none; padding: 1rem; max-width: 900px; margin: 0 auto; }
+.game-container { display: none; padding: 0.8rem; max-width: 1440px; margin: 0 auto; }
 .game-container.active { display: block; }
 
-/* Battle game styles */
-.battle-area {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  gap: 1rem;
-  align-items: start;
-  margin-bottom: 1.5rem;
-}
-.fighter {
-  background: #1a1d2e;
-  border-radius: 10px;
-  padding: 1.2rem;
-  text-align: center;
-}
-.fighter.player { border: 1px solid #4a6fa5; }
-.fighter.enemy { border: 1px solid #a54a4a; }
-.fighter h3 { font-size: 1rem; margin-bottom: 0.8rem; }
-.fighter .hp-bar {
-  height: 12px;
-  background: #2a2d3a;
-  border-radius: 6px;
-  overflow: hidden;
-  margin: 0.4rem 0;
-}
-.fighter .hp-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 0.4s ease;
-}
-.fighter.player .hp-fill { background: linear-gradient(90deg, #4a6fa5, #6c8cff); }
-.fighter.enemy .hp-fill { background: linear-gradient(90deg, #a54a4a, #ff6c6c); }
-.fighter .hp-text { font-size: 0.85rem; color: #888; }
-.fighter .rage-bar {
-  height: 6px;
-  background: #2a2d3a;
-  border-radius: 3px;
-  overflow: hidden;
-  margin: 0.3rem 0;
-}
-.fighter .rage-fill {
-  height: 100%;
-  border-radius: 3px;
-  background: linear-gradient(90deg, #ff8c00, #ffcc00);
-  transition: width 0.4s ease;
-}
-.fighter .rage-text { font-size: 0.75rem; color: #ff8c00; }
-
-.vs-divider {
-  display: flex;
-  align-items: center;
-  font-size: 1.2rem;
-  color: #555;
-  font-weight: bold;
-  padding-top: 2rem;
-}
-
-.battle-log {
-  background: #12141c;
-  border: 1px solid #2a2d3a;
-  border-radius: 8px;
-  padding: 0.8rem;
-  height: 140px;
-  overflow-y: auto;
-  font-size: 0.8rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-}
-.battle-log .log-entry { padding: 2px 0; }
-.battle-log .crit { color: #ffcc00; font-weight: bold; }
-.battle-log .hit { color: #6c8cff; }
-.battle-log .damage { color: #ff6c6c; }
-.battle-log .system { color: #888; font-style: italic; }
-
-.action-buttons {
+/* Side-by-side canvas layout */
+.canvas-row {
   display: flex;
   justify-content: center;
-  gap: 0.8rem;
-  margin-bottom: 1rem;
+  gap: 1.2rem;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
+.canvas-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.canvas-col .game-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  text-align: center;
+}
+.canvas-col .game-label.standard { color: #7a9aff; }
+.canvas-col .game-label.enhanced { color: #ff9a3a; }
+.canvas-col .game-label.slots { color: #b060d0; }
+.canvas-col .game-label.coinflip { color: #4ecdc4; }
+
+canvas {
+  border: 1px solid #1e2132;
+  border-radius: 8px;
+  cursor: pointer;
+  display: block;
+}
+canvas:hover { border-color: #2e3152; }
+
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 .btn {
-  padding: 0.7rem 2rem;
+  padding: 0.5rem 1.5rem;
   border: none;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 0.82rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   font-weight: 500;
+  font-family: inherit;
 }
-.btn-fight {
-  background: linear-gradient(135deg, #4a6fa5, #6c8cff);
+.btn-std {
+  background: linear-gradient(135deg, #3a5aaf, #5a7aef);
   color: #fff;
 }
-.btn-fight:hover { transform: scale(1.05); }
-.btn-fight:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-.btn-reset {
-  background: #2a2d3a;
-  color: #888;
+.btn-enh {
+  background: linear-gradient(135deg, #a55a10, #e08030);
+  color: #fff;
 }
-.btn-reset:hover { background: #3a3d4a; color: #ccc; }
+.btn-slot {
+  background: linear-gradient(135deg, #6a2a8a, #b050d0);
+  color: #fff;
+}
+.btn-coin {
+  background: linear-gradient(135deg, #1a7a5a, #3abca4);
+  color: #fff;
+}
+.btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; filter: none; }
+.btn-reset {
+  background: #1a1d2a;
+  color: #666;
+}
+.btn-reset:hover { background: #2a2d3a; color: #aaa; }
 
-/* ToA analysis panel */
+/* Anticipation panel (real-time) */
+.antic-panel {
+  margin-top: 0.4rem;
+  background: #0c0e18;
+  border: 1px solid #1e2132;
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.72rem;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.antic-panel .a-item { white-space: nowrap; }
+.antic-panel .a-label { color: #555; }
+.antic-panel .a-val { color: #aaa; }
+.antic-panel .a-sum { color: #ffcc44; font-weight: 600; }
+
+/* Analysis panel */
 .analysis-panel {
-  background: #1a1d2e;
-  border: 1px solid #2a2d3a;
+  background: #0f1120;
+  border: 1px solid #1a1d2a;
   border-radius: 10px;
-  padding: 1.2rem;
-  margin-top: 1rem;
+  padding: 1rem 1.2rem;
+  margin-top: 0.8rem;
 }
 .analysis-panel h3 {
-  font-size: 0.95rem;
-  margin-bottom: 0.8rem;
-  color: #6c8cff;
+  font-size: 0.88rem;
+  margin-bottom: 0.6rem;
+  color: #7a9aff;
 }
 .gds-display {
   display: flex;
   justify-content: center;
-  gap: 2rem;
-  margin: 1rem 0;
+  gap: 1.5rem;
+  margin: 0.8rem 0;
 }
 .gds-card {
   text-align: center;
-  padding: 0.8rem 1.5rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
-  background: #12141c;
-  min-width: 120px;
+  background: #080a14;
+  min-width: 110px;
+  border: 1px solid #1a1d2a;
 }
-.gds-card .label { font-size: 0.75rem; color: #888; margin-bottom: 0.3rem; }
-.gds-card .value { font-size: 1.8rem; font-weight: bold; }
-.gds-card .value.highlight { color: #6c8cff; }
-.gds-card .sub { font-size: 0.7rem; color: #666; margin-top: 0.2rem; }
+.gds-card .label { font-size: 0.72rem; color: #666; margin-bottom: 0.2rem; }
+.gds-card .value { font-size: 1.6rem; font-weight: bold; color: #888; }
+.gds-card .value.std-color { color: #7a9aff; }
+.gds-card .value.enh-color { color: #ff9a3a; }
+.gds-card .value.slot-color { color: #b060d0; }
+.gds-card .value.coin-color { color: #4ecdc4; }
+.gds-card .sub { font-size: 0.65rem; color: #555; margin-top: 0.1rem; }
 
-.bar-chart {
+/* Component bar chart */
+.comp-chart-row {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin: 0.8rem 0;
+  flex-wrap: wrap;
+}
+.comp-chart {
+  text-align: center;
+}
+.comp-chart .chart-label { font-size: 0.72rem; color: #666; margin-bottom: 0.3rem; }
+.comp-bars {
   display: flex;
   align-items: flex-end;
-  gap: 0.4rem;
-  height: 100px;
-  margin: 1rem 0;
-  padding: 0 1rem;
+  gap: 3px;
+  height: 70px;
+  justify-content: center;
 }
-.bar-group {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
+.comp-bar {
+  width: 22px;
+  border-radius: 2px 2px 0 0;
+  transition: height 0.4s ease;
+  position: relative;
 }
-.bar {
-  width: 100%;
-  max-width: 40px;
-  border-radius: 3px 3px 0 0;
-  transition: height 0.5s ease;
+.comp-bar .bar-tip {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  color: #666;
+  white-space: nowrap;
 }
-.bar.a1 { background: #6c8cff; }
-.bar.a2 { background: #ff8c00; }
-.bar.a3 { background: #4ecdc4; }
-.bar-label { font-size: 0.65rem; color: #666; }
+.comp-bar-label {
+  font-size: 0.6rem;
+  color: #555;
+  margin-top: 2px;
+}
+.comp-bar.c1 { background: #5a7aef; }
+.comp-bar.c2 { background: #e08030; }
+.comp-bar.c3 { background: #3abca4; }
+.comp-bar.c4 { background: #b060d0; }
+.comp-bar.c5 { background: #ef5a5a; }
+.comp-chart .depth-text { font-size: 0.65rem; color: #555; margin-top: 0.3rem; }
 
 .explanation {
-  font-size: 0.8rem;
-  color: #999;
+  font-size: 0.78rem;
+  color: #888;
   line-height: 1.6;
-  margin-top: 0.8rem;
-  padding: 0.8rem;
-  background: #12141c;
+  margin-top: 0.6rem;
+  padding: 0.7rem;
+  background: #080a14;
   border-radius: 6px;
-  border-left: 3px solid #6c8cff;
+  border-left: 3px solid #5a7aef;
 }
-
-/* Comparison mode */
-.comparison {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-.comparison > div {
-  background: #1a1d2e;
-  border-radius: 10px;
-  padding: 1rem;
-  border: 1px solid #2a2d3a;
-}
-.comparison .game-title {
-  text-align: center;
-  font-size: 0.9rem;
-  font-weight: bold;
-  margin-bottom: 0.8rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #2a2d3a;
-}
-
-/* Slot machine */
-.slot-area {
-  text-align: center;
-  max-width: 400px;
-  margin: 0 auto;
-}
-.slot-display {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 1.5rem 0;
-}
-.slot-reel {
-  width: 70px;
-  height: 70px;
-  background: #12141c;
-  border: 2px solid #2a2d3a;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  transition: all 0.3s;
-}
-.slot-reel.spinning { animation: spin-pulse 0.2s infinite; border-color: #ff8c00; }
-.slot-reel.win { border-color: #4ecdc4; background: #1a2d2a; }
-@keyframes spin-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-.slot-result {
-  font-size: 1.2rem;
-  margin: 0.5rem 0;
-  min-height: 1.8rem;
-}
-.slot-result.win { color: #4ecdc4; }
-.slot-result.lose { color: #ff6c6c; }
-.slot-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem;
-  margin: 1rem 0;
-  font-size: 0.8rem;
-}
-.slot-stat { background: #12141c; padding: 0.5rem; border-radius: 6px; }
-.slot-stat .val { font-size: 1.1rem; font-weight: bold; color: #fff; }
-
-/* Current state indicator */
-.state-indicator {
-  text-align: center;
-  font-size: 0.75rem;
-  color: #555;
-  padding: 0.3rem;
-  background: #12141c;
-  border-radius: 4px;
-  margin-top: 0.5rem;
-  font-family: monospace;
-}
-
-/* Responsive */
-@media (max-width: 640px) {
-  .comparison { grid-template-columns: 1fr; }
-  .battle-area { grid-template-columns: 1fr; }
-  .vs-divider { justify-content: center; padding: 0; }
-  .gds-display { flex-direction: column; align-items: center; }
-}
+.explanation strong { color: #ccc; }
+.explanation em { color: #aaa; }
 
 .footer {
   text-align: center;
-  padding: 2rem;
-  color: #555;
-  font-size: 0.75rem;
+  padding: 1.5rem;
+  color: #444;
+  font-size: 0.7rem;
 }
-.footer a { color: #6c8cff; text-decoration: none; }
+.footer a { color: #5a7aef; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+@media (max-width: 1100px) {
+  .canvas-row { flex-direction: column; align-items: center; }
+}
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Feel the Difference</h1>
-  <p>Play games. See why one feels better. Theory of Anticipation explains.</p>
+  <p>Play both games. Notice which one is more exciting. Theory of Anticipation explains why.</p>
 </div>
 
 <div class="tabs">
   <button class="tab active" onclick="switchTab('battle')">Battle: Standard vs Enhanced</button>
-  <button class="tab" onclick="switchTab('slots')">Slots vs Coin Flip</button>
+  <button class="tab" onclick="slots_switchTab('slots')">Slots vs Coin Flip</button>
 </div>
 
 <!-- ============ BATTLE TAB ============ -->
 <div id="tab-battle" class="game-container active">
-
-  <div class="comparison">
+  <div class="canvas-row">
     <!-- Standard Battle -->
-    <div id="game-standard">
-      <div class="game-title">Standard Battle</div>
-      <div class="fighter player">
-        <h3>You</h3>
-        <div class="hp-bar"><div class="hp-fill" id="std-player-hp-bar" style="width:100%"></div></div>
-        <div class="hp-text" id="std-player-hp-text">HP: 5/5</div>
-      </div>
-      <div class="fighter enemy" style="margin-top:0.5rem">
-        <h3>Opponent</h3>
-        <div class="hp-bar"><div class="hp-fill" id="std-enemy-hp-bar" style="width:100%"></div></div>
-        <div class="hp-text" id="std-enemy-hp-text">HP: 5/5</div>
-      </div>
-      <div class="battle-log" id="std-log">
-        <div class="log-entry system">Each turn: 1/3 chance you hit, 1/3 both hit, 1/3 they hit.</div>
-      </div>
-      <div class="action-buttons">
-        <button class="btn btn-fight" id="std-fight-btn" onclick="stdFight()">Fight!</button>
+    <div class="canvas-col">
+      <div class="game-label standard">Standard Battle &mdash; GDS 0.430</div>
+      <canvas id="cvs-std" width="560" height="340"></canvas>
+      <div class="btn-row">
+        <button class="btn btn-std" id="btn-std-fight" onclick="stdAttack()">Attack</button>
         <button class="btn btn-reset" onclick="stdReset()">Reset</button>
       </div>
-      <div class="state-indicator" id="std-state">State: HP(5,5)</div>
+      <div class="antic-panel" id="std-antic">
+        <span class="a-item"><span class="a-label">A&#x2081;</span> <span class="a-val" id="std-a1">0.157</span></span>
+        <span class="a-item"><span class="a-label">A&#x2082;</span> <span class="a-val" id="std-a2">0.054</span></span>
+        <span class="a-item"><span class="a-label">A&#x2083;</span> <span class="a-val" id="std-a3">0.106</span></span>
+        <span class="a-item"><span class="a-label">A&#x2084;</span> <span class="a-val" id="std-a4">0.025</span></span>
+        <span class="a-item"><span class="a-label">A&#x2085;</span> <span class="a-val" id="std-a5">0.041</span></span>
+        <span class="a-item"><span class="a-label">&Sigma;</span> <span class="a-sum" id="std-asum">0.382</span></span>
+        <span class="a-item" style="color:#444" id="std-state-label">HP(5,5)</span>
+      </div>
     </div>
-
     <!-- Enhanced Battle -->
-    <div id="game-enhanced">
-      <div class="game-title" style="color:#ff8c00">Enhanced Battle</div>
-      <div class="fighter player">
-        <h3>You</h3>
-        <div class="hp-bar"><div class="hp-fill" id="enh-player-hp-bar" style="width:100%"></div></div>
-        <div class="hp-text" id="enh-player-hp-text">HP: 5/5</div>
-        <div class="rage-bar"><div class="rage-fill" id="enh-player-rage-bar" style="width:0%"></div></div>
-        <div class="rage-text" id="enh-player-rage-text">Rage: 0</div>
-      </div>
-      <div class="fighter enemy" style="margin-top:0.5rem">
-        <h3>Opponent</h3>
-        <div class="hp-bar"><div class="hp-fill" id="enh-enemy-hp-bar" style="width:100%"></div></div>
-        <div class="hp-text" id="enh-enemy-hp-text">HP: 5/5</div>
-        <div class="rage-bar"><div class="rage-fill" id="enh-enemy-rage-bar" style="width:0%"></div></div>
-        <div class="rage-text" id="enh-enemy-rage-text">Rage: 0</div>
-      </div>
-      <div class="battle-log" id="enh-log">
-        <div class="log-entry system">Same odds + 10% crit chance. Crits deal 1 + rage damage. Rage builds from combat.</div>
-      </div>
-      <div class="action-buttons">
-        <button class="btn btn-fight" id="enh-fight-btn" onclick="enhFight()" style="background:linear-gradient(135deg,#a54a00,#ff8c00)">Fight!</button>
+    <div class="canvas-col">
+      <div class="game-label enhanced">Enhanced Battle (Rage) &mdash; GDS 0.544</div>
+      <canvas id="cvs-enh" width="560" height="340"></canvas>
+      <div class="btn-row">
+        <button class="btn btn-enh" id="btn-enh-fight" onclick="enhAttack()">Attack</button>
         <button class="btn btn-reset" onclick="enhReset()">Reset</button>
       </div>
-      <div class="state-indicator" id="enh-state">State: HP(5,5) R(0,0)</div>
-    </div>
-  </div>
-
-  <!-- Analysis -->
-  <div class="analysis-panel" id="battle-analysis">
-    <h3>ToA Analysis: Why Does One Feel Better?</h3>
-    <div class="gds-display">
-      <div class="gds-card">
-        <div class="label">Standard Battle</div>
-        <div class="value">0.437</div>
-        <div class="sub">GDS (Game Design Score)</div>
-      </div>
-      <div class="gds-card">
-        <div class="label">Enhanced Battle</div>
-        <div class="value highlight">0.560</div>
-        <div class="sub">GDS (+28% higher)</div>
-      </div>
-    </div>
-
-    <div style="display:flex;gap:1.5rem;justify-content:center;margin:1rem 0;flex-wrap:wrap">
-      <div style="text-align:center">
-        <div style="font-size:0.75rem;color:#888;margin-bottom:0.3rem">Standard — GDS Breakdown</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;height:80px;justify-content:center">
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a1" style="width:28px;height:52px"></div>
-            <span class="bar-label">A&#x2081;</span>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a2" style="width:28px;height:40px"></div>
-            <span class="bar-label">A&#x2082;</span>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a3" style="width:28px;height:21px"></div>
-            <span class="bar-label">A&#x2083;</span>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a3" style="width:28px;height:10px"></div>
-            <span class="bar-label">A&#x2084;+</span>
-          </div>
-        </div>
-        <div style="font-size:0.7rem;color:#666;margin-top:0.3rem">Depth: 59.6%</div>
-      </div>
-      <div style="text-align:center">
-        <div style="font-size:0.75rem;color:#888;margin-bottom:0.3rem">Enhanced — GDS Breakdown</div>
-        <div style="display:flex;align-items:flex-end;gap:4px;height:80px;justify-content:center">
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a1" style="width:28px;height:47px"></div>
-            <span class="bar-label">A&#x2081;</span>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a2" style="width:28px;height:37px"></div>
-            <span class="bar-label">A&#x2082;</span>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a3" style="width:28px;height:25px"></div>
-            <span class="bar-label">A&#x2083;</span>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:center">
-            <div class="bar a3" style="width:28px;height:18px"></div>
-            <span class="bar-label">A&#x2084;+</span>
-          </div>
-        </div>
-        <div style="font-size:0.7rem;color:#666;margin-top:0.3rem">Depth: 64.5%</div>
-      </div>
-    </div>
-
-    <div class="explanation">
-      <strong>A&#x2081;</strong> = immediate excitement (will this turn go well?).<br>
-      <strong>A&#x2082;</strong> = strategic awareness (how does this turn affect future turns?).<br>
-      <strong>A&#x2083;+</strong> = deep structure (cascading implications across many turns).<br><br>
-      The Enhanced version scores higher because <strong>rage mechanics create comeback potential</strong>. When you're losing, your rage builds, making future crits more devastating. This means every hit matters more &mdash; not just for this turn, but for the shape of the entire fight. That's why it <em>feels</em> more exciting even though the base odds are the same.
-    </div>
-  </div>
-</div>
-
-<!-- ============ SLOTS TAB ============ -->
-<div id="tab-slots" class="game-container">
-
-  <div class="comparison">
-    <!-- Slot Machine -->
-    <div>
-      <div class="game-title">Slot Machine</div>
-      <div class="slot-area">
-        <div class="slot-display">
-          <div class="slot-reel" id="reel1">?</div>
-          <div class="slot-reel" id="reel2">?</div>
-          <div class="slot-reel" id="reel3">?</div>
-        </div>
-        <div class="slot-result" id="slot-result">&nbsp;</div>
-        <div class="slot-stats">
-          <div class="slot-stat">
-            <div>Balance</div>
-            <div class="val" id="slot-balance">100</div>
-          </div>
-          <div class="slot-stat">
-            <div>Spins</div>
-            <div class="val" id="slot-spins">0</div>
-          </div>
-          <div class="slot-stat">
-            <div>Best</div>
-            <div class="val" id="slot-best">0</div>
-          </div>
-        </div>
-        <div class="action-buttons">
-          <button class="btn btn-fight" id="slot-spin-btn" onclick="slotSpin()" style="background:linear-gradient(135deg,#7b2d8b,#c850c0)">Spin! (-10)</button>
-          <button class="btn btn-reset" onclick="slotReset()">Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Coin Flip Game -->
-    <div>
-      <div class="game-title" style="color:#4ecdc4">Double or Nothing</div>
-      <div class="slot-area">
-        <div class="slot-display">
-          <div class="slot-reel" id="coin-display" style="font-size:3rem;width:90px;height:90px">&#x1FA99;</div>
-        </div>
-        <div class="slot-result" id="coin-result">&nbsp;</div>
-        <div class="slot-stats">
-          <div class="slot-stat">
-            <div>At Stake</div>
-            <div class="val" id="coin-stake">10</div>
-          </div>
-          <div class="slot-stat">
-            <div>Round</div>
-            <div class="val" id="coin-round">1</div>
-          </div>
-          <div class="slot-stat">
-            <div>Max Won</div>
-            <div class="val" id="coin-best">0</div>
-          </div>
-        </div>
-        <div class="action-buttons">
-          <button class="btn btn-fight" id="coin-flip-btn" onclick="coinFlip()" style="background:linear-gradient(135deg,#2d7b5b,#4ecdc4)">Flip!</button>
-          <button class="btn btn-fight" id="coin-take-btn" onclick="coinTake()" style="background:linear-gradient(135deg,#5b5b2d,#cdcd4e);display:none">Take Winnings</button>
-          <button class="btn btn-reset" onclick="coinReset()">Reset</button>
-        </div>
+      <div class="antic-panel" id="enh-antic">
+        <span class="a-item"><span class="a-label">A&#x2081;</span> <span class="a-val" id="enh-a1">0.084</span></span>
+        <span class="a-item"><span class="a-label">A&#x2082;</span> <span class="a-val" id="enh-a2">0.021</span></span>
+        <span class="a-item"><span class="a-label">A&#x2083;</span> <span class="a-val" id="enh-a3">0.017</span></span>
+        <span class="a-item"><span class="a-label">A&#x2084;</span> <span class="a-val" id="enh-a4">0.017</span></span>
+        <span class="a-item"><span class="a-label">A&#x2085;</span> <span class="a-val" id="enh-a5">0.019</span></span>
+        <span class="a-item"><span class="a-label">&Sigma;</span> <span class="a-sum" id="enh-asum">0.158</span></span>
+        <span class="a-item" style="color:#444" id="enh-state-label">HP(5,5) R(0,0)</span>
       </div>
     </div>
   </div>
 
   <!-- Analysis -->
   <div class="analysis-panel">
-    <h3>ToA Analysis: Gambling vs Games</h3>
+    <h3>ToA Analysis &mdash; Why Does One Feel Better?</h3>
+    <div class="gds-display">
+      <div class="gds-card">
+        <div class="label">Standard Battle</div>
+        <div class="value std-color">0.430</div>
+        <div class="sub">GDS (Game Design Score)</div>
+      </div>
+      <div class="gds-card">
+        <div class="label">Enhanced Battle</div>
+        <div class="value enh-color">0.544</div>
+        <div class="sub">GDS (+26% higher)</div>
+      </div>
+    </div>
+
+    <div class="comp-chart-row">
+      <div class="comp-chart">
+        <div class="chart-label">Standard &mdash; Anticipation Components</div>
+        <div class="comp-bars" id="std-comp-bars">
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c1" style="height:50px"><div class="bar-tip">.157</div></div><div class="comp-bar-label">A&#x2081;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c2" style="height:38px"><div class="bar-tip">.126</div></div><div class="comp-bar-label">A&#x2082;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c3" style="height:24px"><div class="bar-tip">.083</div></div><div class="comp-bar-label">A&#x2083;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c4" style="height:12px"><div class="bar-tip">.037</div></div><div class="comp-bar-label">A&#x2084;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c5" style="height:8px"><div class="bar-tip">.027</div></div><div class="comp-bar-label">A&#x2085;</div></div>
+        </div>
+        <div class="depth-text">Depth ratio: 59.6%</div>
+      </div>
+      <div class="comp-chart">
+        <div class="chart-label">Enhanced &mdash; Anticipation Components</div>
+        <div class="comp-bars" id="enh-comp-bars">
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c1" style="height:42px"><div class="bar-tip">.186</div></div><div class="comp-bar-label">A&#x2081;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c2" style="height:38px"><div class="bar-tip">.164</div></div><div class="comp-bar-label">A&#x2082;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c3" style="height:30px"><div class="bar-tip">.130</div></div><div class="comp-bar-label">A&#x2083;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c4" style="height:18px"><div class="bar-tip">.081</div></div><div class="comp-bar-label">A&#x2084;</div></div>
+          <div style="display:flex;flex-direction:column;align-items:center"><div class="comp-bar c5" style="height:10px"><div class="bar-tip">.035</div></div><div class="comp-bar-label">A&#x2085;</div></div>
+        </div>
+        <div class="depth-text">Depth ratio: 64.5%</div>
+      </div>
+    </div>
+
+    <div class="explanation">
+      <strong>A&#x2081;</strong> = immediate excitement (will this turn go well?).
+      <strong>A&#x2082;</strong> = how this turn affects the next.
+      <strong>A&#x2083;+</strong> = cascading implications across many turns.<br><br>
+      The Enhanced version scores higher because <strong>rage mechanics create comeback potential</strong>.
+      When you're losing, your rage builds, making future crits devastating.
+      Every hit matters not just now but for the <em>shape of the entire fight</em>.
+      The anticipation panel above each game shows this in real time &mdash; watch how the numbers change as the fight progresses.
+    </div>
+  </div>
+</div>
+
+<!-- ============ SLOTS TAB ============ -->
+<div id="tab-slots" class="game-container">
+  <div class="canvas-row">
+    <!-- Slot Machine -->
+    <div class="canvas-col">
+      <div class="game-label slots">Slot Machine &mdash; GDS 0.102</div>
+      <canvas id="cvs-slot" width="560" height="340"></canvas>
+      <div class="btn-row">
+        <button class="btn btn-slot" id="btn-slot-spin" onclick="slotSpin()">Spin (-10)</button>
+        <button class="btn btn-reset" onclick="slotReset()">Reset</button>
+      </div>
+    </div>
+    <!-- Coin Flip -->
+    <div class="canvas-col">
+      <div class="game-label coinflip">Double or Nothing &mdash; GDS 0.500</div>
+      <canvas id="cvs-coin" width="560" height="340"></canvas>
+      <div class="btn-row">
+        <button class="btn btn-coin" id="btn-coin-flip" onclick="coinFlip()">Flip!</button>
+        <button class="btn btn-coin" id="btn-coin-take" onclick="coinTake()" style="display:none;background:linear-gradient(135deg,#5a5a1a,#b0b040)">Cash Out</button>
+        <button class="btn btn-reset" onclick="coinReset()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analysis -->
+  <div class="analysis-panel">
+    <h3>ToA Analysis &mdash; Gambling vs Games</h3>
     <div class="gds-display">
       <div class="gds-card">
         <div class="label">Slot Machine</div>
-        <div class="value">0.102</div>
+        <div class="value slot-color">0.102</div>
         <div class="sub">GDS (one spin)</div>
       </div>
       <div class="gds-card">
         <div class="label">Double or Nothing</div>
-        <div class="value highlight">0.500</div>
+        <div class="value coin-color">0.500</div>
         <div class="sub">GDS (per flip)</div>
       </div>
     </div>
     <div class="explanation">
-      The slot machine has <strong>5x lower</strong> engagement per spin than a simple coin flip. Why?<br><br>
-      <strong>Payout asymmetry</strong>: the slot has a 0.1% jackpot and 62.9% loss. Most of the time, you know you'll lose.
-      The anticipation formula A&#x2081; = &radic;(p&middot;(1-p)) is maximized at p = 50%, and drops sharply for extreme probabilities.<br><br>
-      Casinos trade engagement for revenue. The <strong>house edge</strong> (reducing your win chance by a few percent) barely affects GDS (&lt;1%). What kills engagement is the <strong>skewed payout structure</strong> &mdash; rare jackpots + frequent losses = low uncertainty = low anticipation.<br><br>
-      The coin flip feels more exciting because <em>you genuinely don't know what will happen next</em>.
+      The slot machine has <strong>5x lower</strong> engagement per decision than a coin flip. Why?<br><br>
+      <strong>Payout asymmetry</strong>: the slot has a 0.1% jackpot and 63% loss rate. Most spins, you already know you'll lose.
+      The anticipation formula A&#x2081; = &radic;(p&middot;(1&minus;p)) peaks at p = 50% and drops sharply for extreme probabilities.<br><br>
+      The <strong>house edge</strong> (shaving a few percent off win probability) barely affects GDS (&lt;1% change).
+      What kills engagement is <strong>skewed payouts</strong> &mdash; rare jackpots + frequent losses = low uncertainty = low anticipation.<br><br>
+      The coin flip feels more exciting because <em>you genuinely don't know what will happen</em>.
     </div>
   </div>
 </div>
 
 <div class="footer">
-  <a href="{{ '/toa-research/' | relative_url }}">Theory of Anticipation Research</a> &middot;
+  <a href="../">Theory of Anticipation Research</a> &middot;
   Built with data from 100 verified tests
 </div>
 
 <script>
-// ============================================================
-// Standard Battle
-// ============================================================
-const STD_MAX_HP = 5;
-let stdState = { hp1: 5, hp2: 5, over: false, wins: 0, losses: 0 };
+// ================================================================
+// AUDIO ENGINE
+// ================================================================
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playSound(freq, dur, type) {
+  try {
+    const a = getAudio();
+    const osc = a.createOscillator(), g = a.createGain();
+    osc.connect(g); g.connect(a.destination);
+    osc.frequency.value = freq; osc.type = type || 'sine';
+    g.gain.setValueAtTime(0.18, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.005, a.currentTime + dur);
+    osc.start(); osc.stop(a.currentTime + dur);
+  } catch(e) {}
+}
 
-function stdFight() {
-  if (stdState.over) return;
-  const roll = Math.random();
-  let msg = '';
+// ================================================================
+// ANTICIPATION TABLES
+// ================================================================
+const STD_ANTICIPATION = {
+  "1,1": [0.471405,0.000000,0.000000,0.000000,0.000000,0.471405],
+  "1,2": [0.157135,0.222222,0.000000,0.000000,0.000000,0.379357],
+  "1,3": [0.052378,0.148148,0.104757,0.000000,0.000000,0.305283],
+  "1,4": [0.017459,0.074074,0.104757,0.049383,0.000000,0.245673],
+  "1,5": [0.005820,0.032922,0.069838,0.065844,0.023279,0.197702],
+  "2,1": [0.314270,0.222222,0.000000,0.000000,0.000000,0.536492],
+  "2,2": [0.277160,0.074074,0.104757,0.000000,0.000000,0.455990],
+  "2,3": [0.160018,0.226355,0.000000,0.049383,0.000000,0.435756],
+  "2,4": [0.076326,0.208473,0.127794,0.028511,0.023279,0.464383],
+  "2,5": [0.033150,0.135650,0.174722,0.050177,0.013600,0.407299],
+  "3,1": [0.104757,0.222222,0.104757,0.000000,0.000000,0.431735],
+  "3,2": [0.218068,0.177337,0.034919,0.049383,0.000000,0.479706],
+  "3,3": [0.212403,0.068903,0.101458,0.016461,0.023279,0.422504],
+  "3,4": [0.148199,0.215109,0.019876,0.069504,0.005681,0.458368],
+  "3,5": [0.085563,0.231974,0.122622,0.063569,0.027223,0.530951],
+  "4,1": [0.034919,0.123457,0.139675,0.049383,0.000000,0.347434],
+  "4,2": [0.118129,0.243651,0.083450,0.032922,0.023279,0.501431],
+  "4,3": [0.179860,0.156183,0.060856,0.046838,0.007760,0.451497],
+  "4,4": [0.178282,0.060677,0.102792,0.019712,0.030898,0.392361],
+  "4,5": [0.136592,0.201744,0.042641,0.078158,0.022322,0.481457],
+  "5,1": [0.011640,0.057613,0.104757,0.082305,0.023279,0.279593],
+  "5,2": [0.054732,0.186226,0.183347,0.020687,0.020530,0.465523],
+  "5,3": [0.116805,0.242232,0.056359,0.068847,0.015148,0.499391],
+  "5,4": [0.157177,0.140129,0.079250,0.040920,0.023408,0.440884],
+  "5,5": [0.156513,0.054238,0.105565,0.024871,0.040641,0.381828],
+};
 
-  if (roll < 1/3) {
-    stdState.hp2--;
-    msg = '<span class="hit">You attack!</span> Opponent takes 1 damage.';
-  } else if (roll < 2/3) {
-    stdState.hp1--;
-    stdState.hp2--;
-    msg = 'Both attack! Both take 1 damage.';
-  } else {
-    stdState.hp1--;
-    msg = '<span class="damage">Opponent attacks!</span> You take 1 damage.';
-  }
+const RAGE_ANTICIPATION = {
+  "1,1,3,3": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,3,4": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,4,3": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,4,4": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,4,5": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,4,6": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,5,4": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,5,5": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,5,6": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,5,7": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,6,4": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,6,5": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,6,6": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,6,7": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,7,5": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,7,6": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,7,7": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,7,8": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,8,7": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,1,8,8": [0.462635,0.000000,0.000000,0.000000,0.000000,0.462635],
+  "1,2,2,3": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,3,3": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,3,4": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,4,3": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,4,4": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,4,5": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,4,6": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,5,3": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,5,4": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,5,5": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,5,6": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,6,4": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,6,5": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,6,6": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,6,7": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,7,6": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,2,7,7": [0.250191,0.201362,0.000000,0.000000,0.000000,0.451553],
+  "1,3,3,3": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,3,4": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,4,3": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,4,4": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,4,5": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,5,3": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,5,4": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,5,5": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,5,6": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,6,5": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,3,6,6": [0.229851,0.160026,0.087643,0.000000,0.000000,0.477520],
+  "1,4,2,3": [0.076691,0.164014,0.091906,0.038147,0.000000,0.370757],
+  "1,4,3,3": [0.228478,0.140677,0.091906,0.038147,0.000000,0.499207],
+  "1,4,4,3": [0.228478,0.140677,0.091906,0.038147,0.000000,0.499207],
+  "1,4,4,4": [0.228478,0.140677,0.091906,0.038147,0.000000,0.499207],
+  "1,4,4,5": [0.228478,0.140677,0.091906,0.038147,0.000000,0.499207],
+  "1,4,5,4": [0.228478,0.140677,0.091906,0.038147,0.000000,0.499207],
+  "1,4,5,5": [0.228478,0.140677,0.091906,0.038147,0.000000,0.499207],
+  "1,5,3,3": [0.074952,0.159839,0.084566,0.049688,0.016603,0.385648],
+  "1,5,4,4": [0.228389,0.135166,0.084566,0.049688,0.016603,0.514413],
+  "2,1,3,2": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,3,3": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,3,4": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,3,5": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,4,3": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,4,4": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,4,5": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,4,6": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,5,4": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,5,5": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,5,6": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,6,4": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,6,5": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,6,6": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,6,7": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,7,6": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,1,7,7": [0.394787,0.201362,0.000000,0.000000,0.000000,0.596149],
+  "2,2,2,2": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,3,3": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,3,4": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,3,5": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,4,3": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,4,4": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,4,5": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,5,3": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,5,4": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,5,5": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,5,6": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,6,5": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,2,6,6": [0.321393,0.197706,0.100669,0.000000,0.000000,0.619769],
+  "2,3,2,2": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,3,2": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,3,3": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,3,4": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,4,2": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,4,3": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,4,4": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,4,5": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,5,4": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,3,5,5": [0.294236,0.232743,0.108328,0.047301,0.000000,0.682607],
+  "2,4,2,2": [0.164040,0.195953,0.136123,0.056476,0.021607,0.574198],
+  "2,4,3,2": [0.290966,0.223747,0.145248,0.056476,0.021607,0.738044],
+  "2,4,3,3": [0.290966,0.223747,0.145248,0.056476,0.021607,0.738044],
+  "2,4,3,4": [0.290966,0.223747,0.145248,0.056476,0.021607,0.738044],
+  "2,4,4,3": [0.290966,0.223747,0.145248,0.056476,0.021607,0.738044],
+  "2,4,4,4": [0.290966,0.223747,0.145248,0.056476,0.021607,0.738044],
+  "2,5,2,2": [0.106323,0.214865,0.132724,0.077919,0.028742,0.560573],
+  "2,5,3,3": [0.159268,0.189163,0.143815,0.082884,0.028742,0.603873],
+  "3,1,3,3": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,3,4": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,3,5": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,4,3": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,4,4": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,4,5": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,5,4": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,5,5": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,5,6": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,6,5": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,1,6,6": [0.328086,0.222961,0.087643,0.000000,0.000000,0.638691],
+  "3,2,2,2": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,2,3": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,2,4": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,3,3": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,3,4": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,4,3": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,4,4": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,4,5": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,5,4": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,2,5,5": [0.292354,0.243792,0.115982,0.047301,0.000000,0.699429],
+  "3,3,2,3": [0.270634,0.286099,0.172337,0.064577,0.023647,0.817295],
+  "3,3,3,2": [0.270634,0.286099,0.172337,0.064577,0.023647,0.817295],
+  "3,3,3,3": [0.270634,0.286099,0.172337,0.064577,0.023647,0.817295],
+  "3,3,3,4": [0.270634,0.286099,0.172337,0.064577,0.023647,0.817295],
+  "3,3,4,3": [0.270634,0.286099,0.172337,0.064577,0.023647,0.817295],
+  "3,3,4,4": [0.270634,0.286099,0.172337,0.064577,0.023647,0.817295],
+  "3,4,2,2": [0.200307,0.233485,0.177510,0.098953,0.034034,0.744288],
+  "3,4,2,3": [0.200307,0.233485,0.177510,0.098953,0.034034,0.744288],
+  "3,4,3,2": [0.265282,0.295577,0.212394,0.105209,0.034034,0.912496],
+  "3,4,3,3": [0.265282,0.295577,0.212394,0.105209,0.034034,0.912496],
+  "3,5,2,2": [0.144497,0.233544,0.193224,0.118107,0.056282,0.745656],
+  "4,1,3,2": [0.170424,0.212339,0.119298,0.038147,0.000000,0.540208],
+  "4,1,3,3": [0.323314,0.199414,0.119298,0.038147,0.000000,0.680173],
+  "4,1,3,4": [0.323314,0.199414,0.119298,0.038147,0.000000,0.680173],
+  "4,1,4,4": [0.323314,0.199414,0.119298,0.038147,0.000000,0.680173],
+  "4,1,4,5": [0.323314,0.199414,0.119298,0.038147,0.000000,0.680173],
+  "4,1,5,4": [0.323314,0.199414,0.119298,0.038147,0.000000,0.680173],
+  "4,1,5,5": [0.323314,0.199414,0.119298,0.038147,0.000000,0.680173],
+  "4,2,2,2": [0.216221,0.206327,0.144376,0.062395,0.021607,0.650924],
+  "4,2,2,3": [0.283022,0.251479,0.156083,0.062395,0.021607,0.774586],
+  "4,2,3,3": [0.283022,0.251479,0.156083,0.062395,0.021607,0.774586],
+  "4,2,3,4": [0.283022,0.251479,0.156083,0.062395,0.021607,0.774586],
+  "4,2,4,3": [0.283022,0.251479,0.156083,0.062395,0.021607,0.774586],
+  "4,2,4,4": [0.283022,0.251479,0.156083,0.062395,0.021607,0.774586],
+  "4,3,2,2": [0.233221,0.256278,0.188121,0.101934,0.035164,0.814718],
+  "4,3,2,3": [0.261979,0.311108,0.221605,0.108335,0.035164,0.938192],
+  "4,3,3,2": [0.233221,0.256278,0.188121,0.101934,0.035164,0.814718],
+  "4,3,3,3": [0.261979,0.311108,0.221605,0.108335,0.035164,0.938192],
+  "4,4,1,1": [0.138843,0.073844,0.090477,0.072618,0.042745,0.418528],
+  "4,4,1,2": [0.164935,0.174585,0.148153,0.100409,0.052122,0.640203],
+  "4,4,2,1": [0.172481,0.139351,0.134328,0.097964,0.052149,0.596273],
+  "4,4,2,2": [0.186790,0.176202,0.186511,0.117854,0.059873,0.727230],
+  "4,5,1,1": [0.111052,0.108714,0.083961,0.079018,0.049366,0.432111],
+  "5,1,3,3": [0.166559,0.205390,0.117087,0.061611,0.016603,0.567251],
+  "5,1,4,4": [0.323004,0.191358,0.117087,0.061611,0.016603,0.709663],
+  "5,2,2,2": [0.148097,0.218809,0.149991,0.084108,0.032262,0.633266],
+  "5,2,3,3": [0.210673,0.201302,0.164687,0.090125,0.032262,0.699048],
+  "5,3,2,2": [0.178068,0.243998,0.207035,0.126211,0.058957,0.814269],
+  "5,4,1,1": [0.119336,0.073470,0.074141,0.077759,0.050510,0.395216],
+  "5,5,0,0": [0.083741,0.020745,0.017179,0.016881,0.019417,0.157964],
+};
 
-  stdState.hp1 = Math.max(0, stdState.hp1);
-  stdState.hp2 = Math.max(0, stdState.hp2);
-  stdUpdateUI(msg);
+function getStdAnticipation(hp1, hp2) {
+  const k = hp1 + ',' + hp2;
+  return STD_ANTICIPATION[k] || [0,0,0,0,0,0];
+}
 
-  if (stdState.hp1 <= 0 || stdState.hp2 <= 0) {
-    stdState.over = true;
-    document.getElementById('std-fight-btn').disabled = true;
-    if (stdState.hp1 > 0 && stdState.hp2 <= 0) {
-      stdLog('<span class="hit"><strong>Victory!</strong></span>');
-      stdState.wins++;
-    } else if (stdState.hp2 > 0 && stdState.hp1 <= 0) {
-      stdLog('<span class="damage"><strong>Defeat.</strong></span>');
-      stdState.losses++;
-    } else {
-      stdLog('<span class="system"><strong>Mutual destruction!</strong></span>');
+function getRageAnticipation(hp1, hp2, r1, r2) {
+  // Exact match first
+  const k = hp1+','+hp2+','+r1+','+r2;
+  if (RAGE_ANTICIPATION[k]) return RAGE_ANTICIPATION[k];
+  // Try clamped rage (many states are equivalent at high rage)
+  for (let dr = 0; dr <= 3; dr++) {
+    for (let cr1 = Math.max(0, r1-dr); cr1 <= r1+dr; cr1++) {
+      for (let cr2 = Math.max(0, r2-dr); cr2 <= r2+dr; cr2++) {
+        const ck = hp1+','+hp2+','+cr1+','+cr2;
+        if (RAGE_ANTICIPATION[ck]) return RAGE_ANTICIPATION[ck];
+      }
     }
   }
+  return null; // will display N/A
 }
 
-function stdUpdateUI(logMsg) {
-  const pBar = document.getElementById('std-player-hp-bar');
-  const eBar = document.getElementById('std-enemy-hp-bar');
-  pBar.style.width = (stdState.hp1 / STD_MAX_HP * 100) + '%';
-  eBar.style.width = (stdState.hp2 / STD_MAX_HP * 100) + '%';
-  document.getElementById('std-player-hp-text').textContent = `HP: ${stdState.hp1}/${STD_MAX_HP}`;
-  document.getElementById('std-enemy-hp-text').textContent = `HP: ${stdState.hp2}/${STD_MAX_HP}`;
-  document.getElementById('std-state').textContent = `State: HP(${stdState.hp1},${stdState.hp2})`;
-  if (logMsg) stdLog(logMsg);
+// ================================================================
+// PARTICLE / EFFECT SYSTEM (shared)
+// ================================================================
+function createParticleSystem() {
+  return { particles: [], texts: [], shake: 0 };
+}
+function addParticles(sys, x, y, color, count) {
+  for (let i = 0; i < (count || 12); i++) {
+    sys.particles.push({
+      x, y,
+      vx: (Math.random() - 0.5) * 10,
+      vy: (Math.random() - 0.5) * 10,
+      life: 35 + Math.random() * 10,
+      maxLife: 45,
+      color,
+      size: 2 + Math.random() * 4
+    });
+  }
+}
+function addTextEffect(sys, x, y, text, color) {
+  sys.texts.push({ x, y, text, color: color || '#fff', life: 50, maxLife: 50 });
+}
+function updateAndDrawEffects(ctx, sys) {
+  // Particles
+  for (let i = sys.particles.length - 1; i >= 0; i--) {
+    const p = sys.particles[i];
+    const alpha = p.life / p.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+    p.x += p.vx; p.y += p.vy; p.vy += 0.25;
+    p.vx *= 0.98;
+    p.life--;
+    if (p.life <= 0) sys.particles.splice(i, 1);
+  }
+  // Floating text
+  for (let i = sys.texts.length - 1; i >= 0; i--) {
+    const t = sys.texts[i];
+    const alpha = t.life / t.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = t.color;
+    ctx.font = 'bold 16px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(t.text, t.x, t.y);
+    t.y -= 0.8;
+    t.life--;
+    if (t.life <= 0) sys.texts.splice(i, 1);
+  }
+  ctx.globalAlpha = 1;
+  // Shake decay
+  if (sys.shake > 0) sys.shake *= 0.9;
+  if (sys.shake < 0.5) sys.shake = 0;
 }
 
-function stdLog(msg) {
-  const log = document.getElementById('std-log');
-  log.innerHTML += `<div class="log-entry">${msg}</div>`;
-  log.scrollTop = log.scrollHeight;
+// ================================================================
+// FIGHTER DRAWING
+// ================================================================
+function drawFighter(ctx, x, y, hp, maxHp, isLeft, color, attacking, rage) {
+  const bodyW = 36, bodyH = 60;
+  const headR = 14;
+  // Body
+  ctx.fillStyle = color;
+  ctx.fillRect(x - bodyW/2, y - bodyH, bodyW, bodyH);
+  // Head
+  ctx.beginPath();
+  ctx.arc(x, y - bodyH - headR + 2, headR, 0, Math.PI * 2);
+  ctx.fill();
+  // Eyes
+  ctx.fillStyle = '#fff';
+  const eyeOff = isLeft ? 4 : -4;
+  ctx.beginPath();
+  ctx.arc(x + eyeOff - 2, y - bodyH - headR + 1, 2.5, 0, Math.PI * 2);
+  ctx.arc(x + eyeOff + 5, y - bodyH - headR + 1, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(x + eyeOff - 1.5 + (isLeft ? 0.5 : -0.5), y - bodyH - headR + 1.5, 1.2, 0, Math.PI * 2);
+  ctx.arc(x + eyeOff + 5.5 + (isLeft ? 0.5 : -0.5), y - bodyH - headR + 1.5, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Attack slash
+  if (attacking) {
+    const ax = isLeft ? x + 30 : x - 30;
+    const ay = y - bodyH / 2;
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    if (isLeft) { ctx.moveTo(ax - 20, ay - 15); ctx.lineTo(ax + 20, ay + 15); }
+    else { ctx.moveTo(ax + 20, ay - 15); ctx.lineTo(ax - 20, ay + 15); }
+    ctx.stroke();
+    // Speed lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 2;
+    for (let i = 1; i <= 3; i++) {
+      const off = i * 6;
+      ctx.beginPath();
+      if (isLeft) { ctx.moveTo(ax - 20 - off, ay - 15 - off); ctx.lineTo(ax + 20 - off, ay + 15 - off); }
+      else { ctx.moveTo(ax + 20 + off, ay - 15 - off); ctx.lineTo(ax - 20 + off, ay + 15 - off); }
+      ctx.stroke();
+    }
+  }
+
+  // HP bar
+  const barW = 50, barH = 6;
+  const barY = y - bodyH - headR * 2 - 10;
+  ctx.fillStyle = '#222';
+  ctx.fillRect(x - barW/2, barY, barW, barH);
+  const hpFrac = Math.max(0, hp / maxHp);
+  const hpColor = hpFrac > 0.5 ? '#4f4' : hpFrac > 0.25 ? '#ff0' : '#f44';
+  ctx.fillStyle = hpColor;
+  ctx.fillRect(x - barW/2, barY, barW * hpFrac, barH);
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - barW/2, barY, barW, barH);
+
+  // HP text
+  ctx.fillStyle = '#999';
+  ctx.font = '10px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(hp + '/' + maxHp, x, barY - 3);
+
+  // Rage aura + bar (if rage defined and > 0)
+  if (typeof rage === 'number' && rage > 0) {
+    // Rage bar below HP bar
+    const rBarY = barY + barH + 3;
+    const rBarH = 4;
+    ctx.fillStyle = '#222';
+    ctx.fillRect(x - barW/2, rBarY, barW, rBarH);
+    const rFrac = Math.min(rage / 8, 1);
+    ctx.fillStyle = '#f80';
+    ctx.fillRect(x - barW/2, rBarY, barW * rFrac, rBarH);
+    ctx.strokeStyle = '#553300';
+    ctx.lineWidth = 0.5;
+    ctx.strokeRect(x - barW/2, rBarY, barW, rBarH);
+    ctx.fillStyle = '#f80';
+    ctx.font = '9px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('R:' + rage, x, rBarY - 2);
+
+    // Aura glow
+    const t = Date.now() * 0.003;
+    const pulse = 0.25 + 0.15 * Math.sin(t * 2.3) + 0.1 * Math.sin(t * 3.7);
+    const auraR = 35 + rage * 5 + Math.sin(t) * 3;
+    const grad = ctx.createRadialGradient(x, y - bodyH/2, 5, x, y - bodyH/2, auraR);
+    grad.addColorStop(0, 'rgba(255,160,0,' + (pulse * 0.5) + ')');
+    grad.addColorStop(0.5, 'rgba(255,120,0,' + (pulse * 0.25) + ')');
+    grad.addColorStop(1, 'rgba(255,80,0,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y - bodyH/2, auraR, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// ================================================================
+// STANDARD BATTLE
+// ================================================================
+const stdCvs = document.getElementById('cvs-std');
+const stdCtx = stdCvs.getContext('2d');
+const STD_MAX_HP = 5;
+let stdFx = createParticleSystem();
+let stdGame = { hp1: 5, hp2: 5, over: false, cooldown: 0, p1Attack: false, p2Attack: false };
+
+function stdAttack() {
+  if (stdGame.over || stdGame.cooldown > 0) return;
+  // Resume audio on first click
+  getAudio();
+  stdGame.cooldown = 30;
+  stdGame.p1Attack = true;
+  stdGame.p2Attack = true;
+
+  const roll = Math.random();
+  if (roll < 1/3) {
+    // Player hits
+    stdGame.hp2 = Math.max(0, stdGame.hp2 - 1);
+    addParticles(stdFx, 400, 180, '#5a7aef', 15);
+    addTextEffect(stdFx, 400, 130, '-1', '#ff5555');
+    playSound(800, 0.12, 'square');
+    stdFx.shake = 8;
+  } else if (roll < 2/3) {
+    // Both hit
+    stdGame.hp1 = Math.max(0, stdGame.hp1 - 1);
+    stdGame.hp2 = Math.max(0, stdGame.hp2 - 1);
+    addParticles(stdFx, 160, 180, '#ff6666', 12);
+    addParticles(stdFx, 400, 180, '#5a7aef', 12);
+    addTextEffect(stdFx, 160, 130, '-1', '#ff5555');
+    addTextEffect(stdFx, 400, 130, '-1', '#ff5555');
+    playSound(1000, 0.15, 'sawtooth');
+    stdFx.shake = 12;
+  } else {
+    // Enemy hits
+    stdGame.hp1 = Math.max(0, stdGame.hp1 - 1);
+    addParticles(stdFx, 160, 180, '#ff6666', 15);
+    addTextEffect(stdFx, 160, 130, '-1', '#ff5555');
+    playSound(600, 0.12, 'square');
+    stdFx.shake = 8;
+  }
+
+  stdUpdateAnticipation();
+
+  if (stdGame.hp1 <= 0 || stdGame.hp2 <= 0) {
+    stdGame.over = true;
+    document.getElementById('btn-std-fight').disabled = true;
+    setTimeout(function() {
+      if (stdGame.hp1 > stdGame.hp2) addTextEffect(stdFx, 280, 60, 'VICTORY!', '#4f4');
+      else if (stdGame.hp2 > stdGame.hp1) addTextEffect(stdFx, 280, 60, 'DEFEAT', '#f44');
+      else addTextEffect(stdFx, 280, 60, 'DRAW', '#ff0');
+      playSound(200, 0.8);
+    }, 300);
+  }
+}
+
+function stdUpdateAnticipation() {
+  const a = getStdAnticipation(stdGame.hp1, stdGame.hp2);
+  document.getElementById('std-a1').textContent = a[0].toFixed(3);
+  document.getElementById('std-a2').textContent = a[1].toFixed(3);
+  document.getElementById('std-a3').textContent = a[2].toFixed(3);
+  document.getElementById('std-a4').textContent = a[3].toFixed(3);
+  document.getElementById('std-a5').textContent = a[4].toFixed(3);
+  document.getElementById('std-asum').textContent = a[5].toFixed(3);
+  document.getElementById('std-state-label').textContent = 'HP(' + stdGame.hp1 + ',' + stdGame.hp2 + ')';
 }
 
 function stdReset() {
-  stdState = { hp1: 5, hp2: 5, over: false };
-  document.getElementById('std-fight-btn').disabled = false;
-  document.getElementById('std-log').innerHTML = '<div class="log-entry system">Each turn: 1/3 chance you hit, 1/3 both hit, 1/3 they hit.</div>';
-  stdUpdateUI();
+  stdGame = { hp1: 5, hp2: 5, over: false, cooldown: 0, p1Attack: false, p2Attack: false };
+  stdFx = createParticleSystem();
+  document.getElementById('btn-std-fight').disabled = false;
+  stdUpdateAnticipation();
 }
 
-// ============================================================
-// Enhanced Battle (with Rage/Crit)
-// ============================================================
-const ENH_MAX_HP = 5;
-const ENH_MAX_RAGE = 5;
-const CRIT_CHANCE = 0.10;
-let enhState = { hp1: 5, hp2: 5, rage1: 0, rage2: 0, over: false };
+function stdDraw() {
+  const ctx = stdCtx;
+  const W = stdCvs.width, H = stdCvs.height;
+  ctx.save();
+  if (stdFx.shake > 0) {
+    ctx.translate((Math.random()-0.5)*stdFx.shake, (Math.random()-0.5)*stdFx.shake);
+  }
+  // Background
+  ctx.fillStyle = '#0a0c16';
+  ctx.fillRect(0, 0, W, H);
+  // Ground
+  const groundY = 260;
+  ctx.fillStyle = '#141828';
+  ctx.fillRect(0, groundY, W, H - groundY);
+  ctx.strokeStyle = '#1e2838';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
 
-function enhFight() {
-  if (enhState.over) return;
-  const roll = Math.random();
-  let msg = '';
+  // Cooldown decay
+  if (stdGame.cooldown > 0) stdGame.cooldown--;
+  if (stdGame.cooldown <= 0) { stdGame.p1Attack = false; stdGame.p2Attack = false; }
 
-  const hitChance = (1.0 - CRIT_CHANCE) / 2.0;
-  const missChance = hitChance;
+  // Fighters
+  drawFighter(ctx, 160, groundY, stdGame.hp1, STD_MAX_HP, true, '#3a6ae0', stdGame.p1Attack);
+  drawFighter(ctx, 400, groundY, stdGame.hp2, STD_MAX_HP, false, '#e04040', stdGame.p2Attack);
 
-  // Determine P1 and P2 actions
-  const r1 = Math.random();
-  const r2 = Math.random();
+  // VS
+  ctx.fillStyle = '#333';
+  ctx.font = '14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('VS', 280, groundY - 30);
 
-  let p1Action, p2Action;
-  if (r1 < CRIT_CHANCE) p1Action = 'crit';
-  else if (r1 < CRIT_CHANCE + hitChance) p1Action = 'hit';
-  else p1Action = 'miss';
+  // Title area
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Standard HpGame | Each turn: 1/3 you, 1/3 both, 1/3 enemy', W/2, 20);
 
-  if (r2 < CRIT_CHANCE) p2Action = 'crit';
-  else if (r2 < CRIT_CHANCE + hitChance) p2Action = 'hit';
-  else p2Action = 'miss';
+  // Effects
+  updateAndDrawEffects(ctx, stdFx);
 
-  // Calculate damage
+  ctx.restore();
+}
+
+// ================================================================
+// ENHANCED BATTLE (RAGE)
+// ================================================================
+const enhCvs = document.getElementById('cvs-enh');
+const enhCtx = enhCvs.getContext('2d');
+const ENH_CRIT = 0.10;
+let enhFx = createParticleSystem();
+let enhGame = { hp1: 5, hp2: 5, r1: 0, r2: 0, over: false, cooldown: 0, p1Attack: false, p2Attack: false, p1Crit: false, p2Crit: false };
+
+function enhAttack() {
+  if (enhGame.over || enhGame.cooldown > 0) return;
+  getAudio();
+  enhGame.cooldown = 30;
+  enhGame.p1Attack = true;
+  enhGame.p2Attack = true;
+  enhGame.p1Crit = false;
+  enhGame.p2Crit = false;
+
+  // Determine actions independently
+  const hitChance = (1.0 - ENH_CRIT) / 2.0;
+  const r1 = Math.random(), r2 = Math.random();
+  let p1Act, p2Act;
+  if (r1 < ENH_CRIT) p1Act = 'crit';
+  else if (r1 < ENH_CRIT + hitChance) p1Act = 'hit';
+  else p1Act = 'miss';
+  if (r2 < ENH_CRIT) p2Act = 'crit';
+  else if (r2 < ENH_CRIT + hitChance) p2Act = 'hit';
+  else p2Act = 'miss';
+
+  // Both miss? Redo (no-miss constraint from original)
+  if (p1Act === 'miss' && p2Act === 'miss') {
+    // Force at least one action
+    if (Math.random() < 0.5) p1Act = 'hit'; else p2Act = 'hit';
+  }
+
   let p1Dmg = 0, p2Dmg = 0;
-  let p1Msg = '', p2Msg = '';
+  if (p1Act === 'crit') { p1Dmg = 1 + enhGame.r1; enhGame.p1Crit = true; }
+  else if (p1Act === 'hit') p1Dmg = 1;
+  if (p2Act === 'crit') { p2Dmg = 1 + enhGame.r2; enhGame.p2Crit = true; }
+  else if (p2Act === 'hit') p2Dmg = 1;
 
-  if (p1Action === 'crit') {
-    p1Dmg = 1 + enhState.rage1;
-    p1Msg = `<span class="crit">CRITICAL HIT! (${p1Dmg} dmg)</span>`;
-  } else if (p1Action === 'hit') {
-    p1Dmg = 1;
-    p1Msg = '<span class="hit">You attack! (1 dmg)</span>';
-  } else {
-    p1Msg = 'You miss.';
+  enhGame.hp2 = Math.max(0, enhGame.hp2 - p1Dmg);
+  enhGame.hp1 = Math.max(0, enhGame.hp1 - p2Dmg);
+
+  // Rage update: dealing or receiving damage both increase rage
+  if (p1Dmg > 0) { enhGame.r1++; enhGame.r2++; }
+  if (p2Dmg > 0) { enhGame.r2++; enhGame.r1++; }
+
+  // Visual feedback
+  if (p1Dmg > 0) {
+    const c = p1Act === 'crit' ? '#ffdd00' : '#5a7aef';
+    addParticles(enhFx, 400, 180, c, p1Act === 'crit' ? 22 : 14);
+    addTextEffect(enhFx, 400, 120, (p1Act === 'crit' ? 'CRIT -' : '-') + p1Dmg, p1Act === 'crit' ? '#ffdd00' : '#ff5555');
+  }
+  if (p2Dmg > 0) {
+    const c = p2Act === 'crit' ? '#ffdd00' : '#ff6666';
+    addParticles(enhFx, 160, 180, c, p2Act === 'crit' ? 22 : 14);
+    addTextEffect(enhFx, 160, 120, (p2Act === 'crit' ? 'CRIT -' : '-') + p2Dmg, p2Act === 'crit' ? '#ffdd00' : '#ff5555');
+  }
+  if (p1Dmg === 0 && p2Dmg === 0) {
+    // This shouldn't happen with the no-miss constraint, but just in case
+    addTextEffect(enhFx, 280, 150, 'MISS', '#666');
   }
 
-  if (p2Action === 'crit') {
-    p2Dmg = 1 + enhState.rage2;
-    p2Msg = `<span class="crit">Enemy CRITICAL! (${p2Dmg} dmg)</span>`;
-  } else if (p2Action === 'hit') {
-    p2Dmg = 1;
-    p2Msg = '<span class="damage">Enemy attacks! (1 dmg)</span>';
-  } else {
-    p2Msg = 'Enemy misses.';
+  if (enhGame.p1Crit || enhGame.p2Crit) {
+    playSound(1200, 0.18, 'sawtooth');
+    enhFx.shake = 16;
+  } else if (p1Dmg > 0 || p2Dmg > 0) {
+    playSound(800, 0.12, 'square');
+    enhFx.shake = 8;
   }
 
-  // Apply damage
-  enhState.hp2 = Math.max(0, enhState.hp2 - p1Dmg);
-  enhState.hp1 = Math.max(0, enhState.hp1 - p2Dmg);
+  enhUpdateAnticipation();
 
-  // Update rage
-  if (p1Dmg > 0) enhState.rage1 = Math.min(ENH_MAX_RAGE, enhState.rage1 + 1);
-  if (p2Dmg > 0) enhState.rage1 = Math.min(ENH_MAX_RAGE, enhState.rage1 + 1);
-  if (p2Dmg > 0) enhState.rage2 = Math.min(ENH_MAX_RAGE, enhState.rage2 + 1);
-  if (p1Dmg > 0) enhState.rage2 = Math.min(ENH_MAX_RAGE, enhState.rage2 + 1);
-
-  msg = `${p1Msg} ${p2Msg}`;
-  enhUpdateUI(msg);
-
-  if (enhState.hp1 <= 0 || enhState.hp2 <= 0) {
-    enhState.over = true;
-    document.getElementById('enh-fight-btn').disabled = true;
-    if (enhState.hp1 > 0 && enhState.hp2 <= 0) {
-      enhLog('<span class="hit"><strong>Victory!</strong></span>');
-    } else if (enhState.hp2 > 0 && enhState.hp1 <= 0) {
-      enhLog('<span class="damage"><strong>Defeat.</strong></span>');
-    } else {
-      enhLog('<span class="system"><strong>Mutual destruction!</strong></span>');
-    }
+  if (enhGame.hp1 <= 0 || enhGame.hp2 <= 0) {
+    enhGame.over = true;
+    document.getElementById('btn-enh-fight').disabled = true;
+    setTimeout(function() {
+      if (enhGame.hp1 > enhGame.hp2) addTextEffect(enhFx, 280, 60, 'VICTORY!', '#4f4');
+      else if (enhGame.hp2 > enhGame.hp1) addTextEffect(enhFx, 280, 60, 'DEFEAT', '#f44');
+      else addTextEffect(enhFx, 280, 60, 'DRAW', '#ff0');
+      playSound(200, 0.8);
+    }, 300);
   }
 }
 
-function enhUpdateUI(logMsg) {
-  document.getElementById('enh-player-hp-bar').style.width = (enhState.hp1 / ENH_MAX_HP * 100) + '%';
-  document.getElementById('enh-enemy-hp-bar').style.width = (enhState.hp2 / ENH_MAX_HP * 100) + '%';
-  document.getElementById('enh-player-hp-text').textContent = `HP: ${enhState.hp1}/${ENH_MAX_HP}`;
-  document.getElementById('enh-enemy-hp-text').textContent = `HP: ${enhState.hp2}/${ENH_MAX_HP}`;
-  document.getElementById('enh-player-rage-bar').style.width = (enhState.rage1 / ENH_MAX_RAGE * 100) + '%';
-  document.getElementById('enh-enemy-rage-bar').style.width = (enhState.rage2 / ENH_MAX_RAGE * 100) + '%';
-  document.getElementById('enh-player-rage-text').textContent = `Rage: ${enhState.rage1}`;
-  document.getElementById('enh-enemy-rage-text').textContent = `Rage: ${enhState.rage2}`;
-  document.getElementById('enh-state').textContent = `State: HP(${enhState.hp1},${enhState.hp2}) R(${enhState.rage1},${enhState.rage2})`;
-  if (logMsg) enhLog(logMsg);
-}
-
-function enhLog(msg) {
-  const log = document.getElementById('enh-log');
-  log.innerHTML += `<div class="log-entry">${msg}</div>`;
-  log.scrollTop = log.scrollHeight;
+function enhUpdateAnticipation() {
+  const a = getRageAnticipation(enhGame.hp1, enhGame.hp2, enhGame.r1, enhGame.r2);
+  if (a) {
+    document.getElementById('enh-a1').textContent = a[0].toFixed(3);
+    document.getElementById('enh-a2').textContent = a[1].toFixed(3);
+    document.getElementById('enh-a3').textContent = a[2].toFixed(3);
+    document.getElementById('enh-a4').textContent = a[3].toFixed(3);
+    document.getElementById('enh-a5').textContent = a[4].toFixed(3);
+    document.getElementById('enh-asum').textContent = a[5].toFixed(3);
+  } else {
+    ['enh-a1','enh-a2','enh-a3','enh-a4','enh-a5'].forEach(function(id){ document.getElementById(id).textContent = 'N/A'; });
+    document.getElementById('enh-asum').textContent = 'N/A';
+  }
+  document.getElementById('enh-state-label').textContent = 'HP(' + enhGame.hp1 + ',' + enhGame.hp2 + ') R(' + enhGame.r1 + ',' + enhGame.r2 + ')';
 }
 
 function enhReset() {
-  enhState = { hp1: 5, hp2: 5, rage1: 0, rage2: 0, over: false };
-  document.getElementById('enh-fight-btn').disabled = false;
-  document.getElementById('enh-log').innerHTML = '<div class="log-entry system">Same odds + 10% crit chance. Crits deal 1 + rage damage. Rage builds from combat.</div>';
-  enhUpdateUI();
+  enhGame = { hp1: 5, hp2: 5, r1: 0, r2: 0, over: false, cooldown: 0, p1Attack: false, p2Attack: false, p1Crit: false, p2Crit: false };
+  enhFx = createParticleSystem();
+  document.getElementById('btn-enh-fight').disabled = false;
+  enhUpdateAnticipation();
 }
 
-// ============================================================
-// Slot Machine
-// ============================================================
-const SLOT_SYMBOLS = ['&#x1F352;','&#x1F34B;','&#x1F514;','&#x2B50;','&#x1F48E;','7&#xFE0F;&#x20E3;'];
-let slotState = { balance: 100, spins: 0, best: 0, spinning: false };
+function enhDraw() {
+  const ctx = enhCtx;
+  const W = enhCvs.width, H = enhCvs.height;
+  ctx.save();
+  if (enhFx.shake > 0) {
+    ctx.translate((Math.random()-0.5)*enhFx.shake, (Math.random()-0.5)*enhFx.shake);
+  }
+  // Background - slightly warmer tone
+  ctx.fillStyle = '#0c0a10';
+  ctx.fillRect(0, 0, W, H);
+  const groundY = 260;
+  ctx.fillStyle = '#181418';
+  ctx.fillRect(0, groundY, W, H - groundY);
+  ctx.strokeStyle = '#2a1e28';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+  if (enhGame.cooldown > 0) enhGame.cooldown--;
+  if (enhGame.cooldown <= 0) { enhGame.p1Attack = false; enhGame.p2Attack = false; }
+
+  drawFighter(ctx, 160, groundY, enhGame.hp1, 5, true, '#3a6ae0', enhGame.p1Attack, enhGame.r1);
+  drawFighter(ctx, 400, groundY, enhGame.hp2, 5, false, '#e04040', enhGame.p2Attack, enhGame.r2);
+
+  ctx.fillStyle = '#333';
+  ctx.font = '14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('VS', 280, groundY - 30);
+
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Enhanced HpGame | Same base odds + 10% crit | Crit deals 1 + rage', W/2, 20);
+
+  updateAndDrawEffects(ctx, enhFx);
+  ctx.restore();
+}
+
+// ================================================================
+// SLOT MACHINE
+// ================================================================
+const slotCvs = document.getElementById('cvs-slot');
+const slotCtx = slotCvs.getContext('2d');
+let slotFx = createParticleSystem();
+const SYMBOLS = ['\uD83C\uDF52','\uD83C\uDF4B','\uD83D\uDD14','\u2B50','\uD83D\uDC8E','7\uFE0F\u20E3'];
+const SYMBOL_NAMES = ['Cherry','Lemon','Bell','Star','Gem','Seven'];
+let slotGame = {
+  balance: 100, spins: 0, best: 0, spinning: false,
+  reels: ['?','?','?'], reelPhase: [0,0,0],
+  result: '', resultColor: '#888', resultTimer: 0,
+  spinTimer: 0, finalSymbols: ['?','?','?']
+};
 
 function slotSpin() {
-  if (slotState.spinning || slotState.balance < 10) return;
-  slotState.spinning = true;
-  slotState.balance -= 10;
-  slotState.spins++;
-  document.getElementById('slot-spin-btn').disabled = true;
-  document.getElementById('slot-result').innerHTML = '&nbsp;';
+  if (slotGame.spinning || slotGame.balance < 10) return;
+  getAudio();
+  slotGame.spinning = true;
+  slotGame.balance -= 10;
+  slotGame.spins++;
+  slotGame.result = '';
+  slotGame.resultTimer = 0;
+  document.getElementById('btn-slot-spin').disabled = true;
 
-  const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
-  reels.forEach(r => r.classList.add('spinning'));
-
-  // Determine result
+  // Determine outcome
   const roll = Math.random();
-  let result, symbols, payout;
-
+  let payout, symbols;
   if (roll < 0.001) {
-    result = 'JACKPOT!';
-    symbols = ['7&#xFE0F;&#x20E3;','7&#xFE0F;&#x20E3;','7&#xFE0F;&#x20E3;'];
+    symbols = ['7\uFE0F\u20E3','7\uFE0F\u20E3','7\uFE0F\u20E3'];
     payout = 1000;
   } else if (roll < 0.021) {
-    result = 'Big Win!';
-    const s = SLOT_SYMBOLS[Math.floor(Math.random() * 4)];
+    const s = SYMBOLS[Math.floor(Math.random() * 4)];
     symbols = [s, s, s];
     payout = 100;
   } else if (roll < 0.171) {
-    result = 'Small Win';
-    const s = SLOT_SYMBOLS[Math.floor(Math.random() * 4)];
-    symbols = [s, s, SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)]];
+    const s = SYMBOLS[Math.floor(Math.random() * 4)];
+    symbols = [s, s, SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]];
     payout = 20;
   } else if (roll < 0.371) {
-    result = 'So close...';
-    const s = SLOT_SYMBOLS[Math.floor(Math.random() * 4)];
-    const other = SLOT_SYMBOLS[(SLOT_SYMBOLS.indexOf(s) + 1) % SLOT_SYMBOLS.length];
-    symbols = [s, s, other];
+    const s = SYMBOLS[Math.floor(Math.random() * 4)];
+    const o = SYMBOLS[(SYMBOLS.indexOf(s) + 1) % SYMBOLS.length];
+    symbols = [s, s, o];
     payout = 0;
   } else {
-    result = '';
     symbols = [
-      SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)],
-      SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)],
-      SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+      SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]
     ];
     payout = 0;
   }
 
-  // Animate reels stopping one by one
-  setTimeout(() => { reels[0].classList.remove('spinning'); reels[0].innerHTML = symbols[0]; }, 300);
-  setTimeout(() => { reels[1].classList.remove('spinning'); reels[1].innerHTML = symbols[1]; }, 600);
-  setTimeout(() => {
-    reels[2].classList.remove('spinning');
-    reels[2].innerHTML = symbols[2];
+  slotGame.finalSymbols = symbols;
+  slotGame.spinTimer = 0;
+  slotGame.reelPhase = [0, 0, 0]; // frames spinning
 
-    slotState.balance += payout;
-    slotState.best = Math.max(slotState.best, payout);
-    slotState.spinning = false;
+  playSound(400, 0.08, 'square');
 
-    if (payout > 0) {
-      document.getElementById('slot-result').innerHTML = `<span class="win">${result} +${payout}</span>`;
-      reels.forEach(r => r.classList.add('win'));
-      setTimeout(() => reels.forEach(r => r.classList.remove('win')), 1000);
-    } else if (result) {
-      document.getElementById('slot-result').innerHTML = `<span class="lose">${result}</span>`;
+  // Use animation frames — stop reels at 20, 35, 50 frames
+  const stopAt = [20, 35, 50];
+  slotGame._stopAt = stopAt;
+  slotGame._payout = payout;
+  slotGame._stopped = [false, false, false];
+}
+
+function slotUpdate() {
+  if (!slotGame.spinning) return;
+  slotGame.spinTimer++;
+
+  for (let i = 0; i < 3; i++) {
+    if (!slotGame._stopped[i]) {
+      slotGame.reelPhase[i]++;
+      // Randomize display while spinning
+      slotGame.reels[i] = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+      if (slotGame.spinTimer >= slotGame._stopAt[i]) {
+        slotGame._stopped[i] = true;
+        slotGame.reels[i] = slotGame.finalSymbols[i];
+        playSound(600 + i * 200, 0.06, 'sine');
+      }
+    }
+  }
+
+  if (slotGame._stopped[0] && slotGame._stopped[1] && slotGame._stopped[2]) {
+    // All stopped
+    const payout = slotGame._payout;
+    slotGame.balance += payout;
+    slotGame.best = Math.max(slotGame.best, payout);
+    slotGame.spinning = false;
+
+    if (payout >= 1000) {
+      slotGame.result = 'JACKPOT! +' + payout;
+      slotGame.resultColor = '#ffdd00';
+      addParticles(slotFx, 280, 170, '#ffdd00', 30);
+      playSound(1400, 0.5, 'sawtooth');
+      slotFx.shake = 15;
+    } else if (payout >= 100) {
+      slotGame.result = 'Big Win! +' + payout;
+      slotGame.resultColor = '#4ecdc4';
+      addParticles(slotFx, 280, 170, '#4ecdc4', 20);
+      playSound(1000, 0.3, 'sine');
+      slotFx.shake = 8;
+    } else if (payout > 0) {
+      slotGame.result = 'Small Win +' + payout;
+      slotGame.resultColor = '#88bb88';
     } else {
-      document.getElementById('slot-result').innerHTML = `<span class="lose">No match</span>`;
+      slotGame.result = 'No match';
+      slotGame.resultColor = '#555';
     }
+    slotGame.resultTimer = 120;
 
-    document.getElementById('slot-balance').textContent = slotState.balance;
-    document.getElementById('slot-spins').textContent = slotState.spins;
-    document.getElementById('slot-best').textContent = slotState.best;
-    document.getElementById('slot-spin-btn').disabled = slotState.balance < 10;
-
-    if (slotState.balance < 10) {
-      document.getElementById('slot-result').innerHTML = '<span class="lose">Bankrupt!</span>';
+    document.getElementById('btn-slot-spin').disabled = slotGame.balance < 10;
+    if (slotGame.balance < 10) {
+      slotGame.result = 'Bankrupt!';
+      slotGame.resultColor = '#ff4444';
     }
-  }, 900);
+  }
+}
+
+function slotDraw() {
+  const ctx = slotCtx;
+  const W = slotCvs.width, H = slotCvs.height;
+  ctx.fillStyle = '#0a0810';
+  ctx.fillRect(0, 0, W, H);
+
+  slotUpdate();
+  updateAndDrawEffects(ctx, slotFx);
+
+  // Machine body
+  const mx = 130, my = 50, mw = 300, mh = 200;
+  ctx.fillStyle = '#161222';
+  ctx.strokeStyle = '#b060d0';
+  ctx.lineWidth = 2;
+  roundRect(ctx, mx, my, mw, mh, 12);
+  ctx.fill(); ctx.stroke();
+
+  // Title
+  ctx.fillStyle = '#b060d0';
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('SLOT MACHINE', mx + mw/2, my + 24);
+
+  // Reel windows
+  const reelY = my + 40;
+  const reelH = 70;
+  const reelW = 70;
+  const reelGap = 15;
+  const reelStartX = mx + (mw - 3 * reelW - 2 * reelGap) / 2;
+
+  for (let i = 0; i < 3; i++) {
+    const rx = reelStartX + i * (reelW + reelGap);
+    ctx.fillStyle = '#0a0810';
+    ctx.strokeStyle = slotGame.spinning && !slotGame._stopped[i] ? '#e080f0' : '#2a2040';
+    ctx.lineWidth = 2;
+    roundRect(ctx, rx, reelY, reelW, reelH, 6);
+    ctx.fill(); ctx.stroke();
+
+    // Symbol
+    ctx.font = '32px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.fillText(slotGame.reels[i], rx + reelW/2, reelY + reelH/2);
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  // Result text
+  if (slotGame.resultTimer > 0) {
+    slotGame.resultTimer--;
+    ctx.fillStyle = slotGame.resultColor;
+    ctx.font = 'bold 16px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(slotGame.result, mx + mw/2, reelY + reelH + 28);
+  }
+
+  // Stats
+  const sy = my + mh + 20;
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Balance: ' + slotGame.balance, mx + 50, sy);
+  ctx.fillText('Spins: ' + slotGame.spins, mx + mw/2, sy);
+  ctx.fillText('Best: ' + slotGame.best, mx + mw - 50, sy);
+
+  // Payout table
+  ctx.fillStyle = '#444';
+  ctx.font = '10px Arial';
+  ctx.textAlign = 'left';
+  const ptx = mx + 10, pty = sy + 22;
+  ctx.fillText('777 = 1000   |   3 match = 100   |   2 match = 20   |   Cost: 10', ptx, pty);
 }
 
 function slotReset() {
-  slotState = { balance: 100, spins: 0, best: 0, spinning: false };
-  document.getElementById('slot-balance').textContent = 100;
-  document.getElementById('slot-spins').textContent = 0;
-  document.getElementById('slot-best').textContent = 0;
-  document.getElementById('slot-result').innerHTML = '&nbsp;';
-  document.getElementById('slot-spin-btn').disabled = false;
-  ['reel1','reel2','reel3'].forEach(id => {
-    const el = document.getElementById(id);
-    el.innerHTML = '?';
-    el.classList.remove('spinning', 'win');
-  });
+  slotGame = {
+    balance: 100, spins: 0, best: 0, spinning: false,
+    reels: ['?','?','?'], reelPhase: [0,0,0],
+    result: '', resultColor: '#888', resultTimer: 0,
+    spinTimer: 0, finalSymbols: ['?','?','?']
+  };
+  slotFx = createParticleSystem();
+  document.getElementById('btn-slot-spin').disabled = false;
 }
 
-// ============================================================
-// Coin Flip (Double or Nothing)
-// ============================================================
-let coinState = { stake: 10, round: 1, best: 0, active: true, totalWon: 0 };
+// ================================================================
+// COIN FLIP (DOUBLE OR NOTHING)
+// ================================================================
+const coinCvs = document.getElementById('cvs-coin');
+const coinCtx = coinCvs.getContext('2d');
+let coinFx = createParticleSystem();
+let coinGame = {
+  stake: 10, round: 1, best: 0, active: true, flipping: false,
+  result: '', resultColor: '#888', resultTimer: 0,
+  coinAngle: 0, coinFlipFrames: 0, coinFace: '',
+  totalWon: 0
+};
 
 function coinFlip() {
-  if (!coinState.active) return;
+  if (!coinGame.active || coinGame.flipping) return;
+  getAudio();
+  coinGame.flipping = true;
+  coinGame.coinFlipFrames = 25;
+  coinGame.result = '';
+  coinGame.resultTimer = 0;
   const win = Math.random() < 0.5;
-  const display = document.getElementById('coin-display');
+  coinGame._pendingWin = win;
+  playSound(500, 0.1, 'sine');
+}
 
-  display.classList.add('spinning');
-  setTimeout(() => {
-    display.classList.remove('spinning');
+function coinUpdate() {
+  if (!coinGame.flipping) return;
+  coinGame.coinFlipFrames--;
+  coinGame.coinAngle += 0.5;
+
+  if (coinGame.coinFlipFrames <= 0) {
+    coinGame.flipping = false;
+    const win = coinGame._pendingWin;
     if (win) {
-      coinState.stake *= 2;
-      coinState.round++;
-      display.innerHTML = '&#x2705;';
-      document.getElementById('coin-result').innerHTML = `<span class="win">Heads! Stake doubled to ${coinState.stake}</span>`;
-      document.getElementById('coin-take-btn').style.display = 'inline-block';
+      coinGame.stake *= 2;
+      coinGame.round++;
+      coinGame.coinFace = 'H';
+      coinGame.result = 'Heads! Doubled to ' + coinGame.stake;
+      coinGame.resultColor = '#4ecdc4';
+      addParticles(coinFx, 280, 150, '#4ecdc4', 10);
+      playSound(900, 0.15, 'sine');
+      document.getElementById('btn-coin-take').style.display = '';
     } else {
-      display.innerHTML = '&#x274C;';
-      document.getElementById('coin-result').innerHTML = `<span class="lose">Tails! Lost ${coinState.stake}</span>`;
-      coinState.stake = 0;
-      coinState.active = false;
-      document.getElementById('coin-flip-btn').disabled = true;
-      document.getElementById('coin-take-btn').style.display = 'none';
+      coinGame.coinFace = 'T';
+      coinGame.result = 'Tails! Lost ' + coinGame.stake;
+      coinGame.resultColor = '#ff5555';
+      addParticles(coinFx, 280, 150, '#ff5555', 15);
+      coinFx.shake = 10;
+      playSound(250, 0.4, 'sawtooth');
+      coinGame.stake = 0;
+      coinGame.active = false;
+      document.getElementById('btn-coin-flip').disabled = true;
+      document.getElementById('btn-coin-take').style.display = 'none';
     }
-    document.getElementById('coin-stake').textContent = coinState.stake;
-    document.getElementById('coin-round').textContent = coinState.round;
-    document.getElementById('coin-best').textContent = coinState.best;
-  }, 400);
+    coinGame.resultTimer = 120;
+  }
 }
 
 function coinTake() {
-  coinState.totalWon += coinState.stake;
-  coinState.best = Math.max(coinState.best, coinState.stake);
-  document.getElementById('coin-result').innerHTML = `<span class="win">Took ${coinState.stake}! Starting new round.</span>`;
-  document.getElementById('coin-best').textContent = coinState.best;
-  coinState.stake = 10;
-  coinState.round = 1;
-  document.getElementById('coin-stake').textContent = coinState.stake;
-  document.getElementById('coin-round').textContent = coinState.round;
-  document.getElementById('coin-display').innerHTML = '&#x1FA99;';
-  document.getElementById('coin-take-btn').style.display = 'none';
+  coinGame.totalWon += coinGame.stake;
+  coinGame.best = Math.max(coinGame.best, coinGame.stake);
+  coinGame.result = 'Took ' + coinGame.stake + '! New round.';
+  coinGame.resultColor = '#bbbb44';
+  coinGame.resultTimer = 90;
+  addParticles(coinFx, 280, 150, '#dddd44', 12);
+  playSound(1100, 0.15, 'sine');
+  coinGame.stake = 10;
+  coinGame.round = 1;
+  coinGame.coinFace = '';
+  document.getElementById('btn-coin-take').style.display = 'none';
 }
 
 function coinReset() {
-  coinState = { stake: 10, round: 1, best: 0, active: true, totalWon: 0 };
-  document.getElementById('coin-stake').textContent = 10;
-  document.getElementById('coin-round').textContent = 1;
-  document.getElementById('coin-best').textContent = 0;
-  document.getElementById('coin-result').innerHTML = '&nbsp;';
-  document.getElementById('coin-display').innerHTML = '&#x1FA99;';
-  document.getElementById('coin-flip-btn').disabled = false;
-  document.getElementById('coin-take-btn').style.display = 'none';
+  coinGame = {
+    stake: 10, round: 1, best: 0, active: true, flipping: false,
+    result: '', resultColor: '#888', resultTimer: 0,
+    coinAngle: 0, coinFlipFrames: 0, coinFace: '',
+    totalWon: 0
+  };
+  coinFx = createParticleSystem();
+  document.getElementById('btn-coin-flip').disabled = false;
+  document.getElementById('btn-coin-take').style.display = 'none';
 }
 
-// ============================================================
-// Tab switching
-// ============================================================
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.game-container').forEach(c => c.classList.remove('active'));
-  event.target.classList.add('active');
-  document.getElementById('tab-' + tab).classList.add('active');
+function coinDraw() {
+  const ctx = coinCtx;
+  const W = coinCvs.width, H = coinCvs.height;
+  ctx.fillStyle = '#080c10';
+  ctx.fillRect(0, 0, W, H);
+
+  coinUpdate();
+  updateAndDrawEffects(ctx, coinFx);
+
+  // Coin
+  const cx = 280, cy = 140, cr = 50;
+  const scaleY = coinGame.flipping ? Math.abs(Math.cos(coinGame.coinAngle)) : 1;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(1, Math.max(0.05, scaleY));
+
+  // Coin body
+  const grad = ctx.createRadialGradient(-10, -10, 5, 0, 0, cr);
+  grad.addColorStop(0, '#f0d060');
+  grad.addColorStop(0.7, '#c0a030');
+  grad.addColorStop(1, '#907020');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(0, 0, cr, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#806010';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  // Coin face
+  if (!coinGame.flipping) {
+    ctx.fillStyle = '#604800';
+    ctx.font = 'bold 28px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (coinGame.coinFace === 'H') ctx.fillText('H', 0, 2);
+    else if (coinGame.coinFace === 'T') ctx.fillText('T', 0, 2);
+    else ctx.fillText('?', 0, 2);
+  }
+  ctx.restore();
+
+  // Stats
+  ctx.fillStyle = '#888';
+  ctx.font = '13px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('At Stake: ' + coinGame.stake, 180, 240);
+  ctx.fillText('Round: ' + coinGame.round, 280, 240);
+  ctx.fillText('Best Won: ' + coinGame.best, 380, 240);
+
+  if (coinGame.totalWon > 0) {
+    ctx.fillStyle = '#666';
+    ctx.font = '11px Arial';
+    ctx.fillText('Total cashed out: ' + coinGame.totalWon, 280, 260);
+  }
+
+  // Result text
+  if (coinGame.resultTimer > 0) {
+    coinGame.resultTimer--;
+    ctx.fillStyle = coinGame.resultColor;
+    ctx.font = 'bold 15px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(coinGame.result, 280, 210);
+  }
+
+  // Title
+  ctx.fillStyle = '#4ecdc4';
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('DOUBLE OR NOTHING', 280, 30);
+  ctx.fillStyle = '#555';
+  ctx.font = '11px Arial';
+  ctx.fillText('Win = double your stake | Lose = lose everything | Cash out anytime', 280, 48);
+
+  // Instructions
+  if (!coinGame.active && coinGame.stake === 0) {
+    ctx.fillStyle = '#ff5555';
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText('BUSTED! Hit Reset to try again.', 280, 290);
+  }
 }
+
+// ================================================================
+// UTILITY
+// ================================================================
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ================================================================
+// TAB SWITCHING
+// ================================================================
+let activeTab = 'battle';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('.game-container').forEach(function(c){ c.classList.remove('active'); });
+  document.getElementById('tab-' + tab).classList.add('active');
+  // Highlight the right tab button
+  var tabs = document.querySelectorAll('.tab');
+  if (tab === 'battle') tabs[0].classList.add('active');
+  else tabs[1].classList.add('active');
+}
+function slots_switchTab(tab) { switchTab(tab); }
+
+// ================================================================
+// MAIN LOOP
+// ================================================================
+function mainLoop() {
+  if (activeTab === 'battle') {
+    stdDraw();
+    enhDraw();
+  } else {
+    slotDraw();
+    coinDraw();
+  }
+  requestAnimationFrame(mainLoop);
+}
+
+// Init anticipation displays
+stdUpdateAnticipation();
+enhUpdateAnticipation();
+
+// Enable audio on first interaction
+document.addEventListener('click', function() {
+  try { getAudio(); } catch(e) {}
+}, { once: true });
+
+mainLoop();
 </script>
 
 </body>
