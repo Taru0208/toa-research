@@ -1,0 +1,639 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Coin Duel</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0a0c14;
+  color: #c8ccd4;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+#gameContainer {
+  position: relative;
+  width: 600px;
+  max-width: 100vw;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+#controls {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 600px;
+}
+.btn {
+  background: linear-gradient(180deg, #1a1e2e 0%, #121520 100%);
+  border: 1px solid #2a3050;
+  color: #c8ccd4;
+  padding: 14px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 80px;
+  text-align: center;
+}
+.btn:hover { background: linear-gradient(180deg, #242840 0%, #1a1e30 100%); border-color: #4a5080; }
+.btn:active { transform: scale(0.96); }
+.btn.disabled { opacity: 0.3; pointer-events: none; }
+.btn.gold { border-color: #c89b3c; color: #f0d060; }
+.btn.gold:hover { border-color: #f0d060; }
+#info {
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  color: #666;
+  max-width: 600px;
+}
+#stats {
+  font-size: 12px;
+  color: #445;
+  padding: 4px;
+}
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+  <canvas id="game" width="600" height="500"></canvas>
+</div>
+<div id="controls">
+  <button class="btn gold" onclick="wager(1)">🪙 1</button>
+  <button class="btn gold" onclick="wager(2)">🪙 2</button>
+  <button class="btn gold" onclick="wager(3)">🪙 3</button>
+</div>
+<div id="info">Choose how many coins to wager. More coins = better odds, but drains your bank.</div>
+<div id="stats"></div>
+
+<script>
+'use strict';
+const C = document.getElementById('game');
+const ctx = C.getContext('2d');
+const W = 600, H = 500;
+
+// --- Audio ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+function playTone(freq, dur, type='sine', vol=0.15) {
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + dur);
+}
+function sfxFlip() { playTone(800 + Math.random()*400, 0.08, 'square', 0.08); }
+function sfxHeads() { playTone(1200, 0.12, 'sine', 0.12); }
+function sfxTails() { playTone(300, 0.12, 'triangle', 0.1); }
+function sfxWinRound() { playTone(523, 0.15); setTimeout(()=>playTone(659, 0.15), 100); setTimeout(()=>playTone(784, 0.2), 200); }
+function sfxLoseRound() { playTone(400, 0.15, 'sawtooth', 0.08); setTimeout(()=>playTone(300, 0.2, 'sawtooth', 0.06), 150); }
+function sfxGameWin() { [523,659,784,1047].forEach((f,i)=>setTimeout(()=>playTone(f, 0.25, 'sine', 0.15), i*120)); }
+function sfxGameLose() { [400,350,300,250].forEach((f,i)=>setTimeout(()=>playTone(f, 0.2, 'sawtooth', 0.08), i*150)); }
+
+// --- Game State ---
+const CONFIG = { roundsToWin: 3, initialBank: 5, maxBank: 8, maxWager: 3, refill: 1 };
+let state = { score1: 0, score2: 0, bank1: CONFIG.initialBank, bank2: CONFIG.initialBank };
+let phase = 'choosing'; // choosing, flipping, result, gameover
+let flipData = null;
+let particles = [];
+let shakeTimer = 0;
+let message = '';
+let messageTimer = 0;
+
+// Stats
+let stats = JSON.parse(localStorage.getItem('coinDuelStats') || '{"wins":0,"losses":0,"streak":0,"best":0}');
+function saveStats() { localStorage.setItem('coinDuelStats', JSON.stringify(stats)); }
+function updateStatsUI() {
+  document.getElementById('stats').textContent =
+    `W:${stats.wins} L:${stats.losses} | Streak:${stats.streak} Best:${stats.best}`;
+}
+
+// --- AI (Medium) ---
+function aiWager() {
+  const maxW = Math.min(CONFIG.maxWager, state.bank2);
+  if (maxW <= 1) return 1;
+  // Proportional to bank, slightly random
+  let w = Math.max(1, Math.round(state.bank2 / 3));
+  // If behind, be more aggressive
+  if (state.score1 > state.score2) w = Math.min(maxW, w + 1);
+  // If ahead, be conservative
+  if (state.score2 > state.score1) w = Math.max(1, w - 1);
+  return Math.min(w, maxW);
+}
+
+// --- Coin Flip Logic ---
+function flipCoins(n) {
+  const flips = [];
+  let heads = 0;
+  for (let i = 0; i < n; i++) {
+    const h = Math.random() < 0.5;
+    flips.push(h);
+    if (h) heads++;
+  }
+  return { flips, heads };
+}
+
+// --- Particles ---
+function spawnParticles(x, y, color, count=8) {
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i / count) + Math.random() * 0.5;
+    const speed = 1.5 + Math.random() * 3;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1,
+      life: 1.0,
+      decay: 0.015 + Math.random() * 0.015,
+      size: 2 + Math.random() * 3,
+      color,
+    });
+  }
+}
+
+// --- Wager Action ---
+function wager(n) {
+  if (phase !== 'choosing') return;
+  ensureAudio();
+  const maxW = Math.min(CONFIG.maxWager, state.bank1);
+  if (n > maxW) return;
+
+  phase = 'flipping';
+  const w1 = n;
+  const w2 = aiWager();
+
+  const p1 = flipCoins(w1);
+  const p2 = flipCoins(w2);
+
+  flipData = {
+    w1, w2,
+    flips1: p1.flips, flips2: p2.flips,
+    heads1: p1.heads, heads2: p2.heads,
+    revealed: 0,
+    revealTimer: 0,
+    totalCoins: w1 + w2,
+    settled: false,
+  };
+
+  // Disable buttons during flip
+  updateButtons();
+}
+
+function settleRound() {
+  const { w1, w2, heads1, heads2 } = flipData;
+
+  if (heads1 === heads2) {
+    // Draw — re-roll
+    message = 'DRAW — Re-roll!';
+    messageTimer = 60;
+    phase = 'choosing';
+    flipData = null;
+    updateButtons();
+    return;
+  }
+
+  const p1wins = heads1 > heads2;
+
+  // Spend coins + refill
+  state.bank1 = Math.min(state.bank1 - w1 + CONFIG.refill, CONFIG.maxBank);
+  state.bank2 = Math.min(state.bank2 - w2 + CONFIG.refill, CONFIG.maxBank);
+
+  if (p1wins) {
+    state.score1++;
+    sfxWinRound();
+    message = 'You win the round!';
+    spawnParticles(W/2, H/2 - 40, '#f0d060', 12);
+  } else {
+    state.score2++;
+    sfxLoseRound();
+    message = 'Opponent wins the round!';
+    shakeTimer = 10;
+    spawnParticles(W/2, H/2 + 40, '#ff4444', 12);
+  }
+  messageTimer = 80;
+
+  // Check game over
+  if (state.score1 >= CONFIG.roundsToWin) {
+    phase = 'gameover';
+    message = 'YOU WIN!';
+    messageTimer = 200;
+    sfxGameWin();
+    stats.wins++;
+    stats.streak++;
+    if (stats.streak > stats.best) stats.best = stats.streak;
+    saveStats();
+    spawnParticles(W/2, H/2, '#f0d060', 30);
+    spawnParticles(W/2 - 80, H/2, '#ffaa00', 15);
+    spawnParticles(W/2 + 80, H/2, '#ffaa00', 15);
+  } else if (state.score2 >= CONFIG.roundsToWin) {
+    phase = 'gameover';
+    message = 'YOU LOSE';
+    messageTimer = 200;
+    sfxGameLose();
+    stats.losses++;
+    stats.streak = 0;
+    saveStats();
+  } else {
+    phase = 'result';
+    setTimeout(() => {
+      if (phase === 'result') {
+        phase = 'choosing';
+        flipData = null;
+        updateButtons();
+      }
+    }, 1200);
+  }
+  updateButtons();
+}
+
+function resetGame() {
+  state = { score1: 0, score2: 0, bank1: CONFIG.initialBank, bank2: CONFIG.initialBank };
+  phase = 'choosing';
+  flipData = null;
+  message = '';
+  messageTimer = 0;
+  particles = [];
+  updateButtons();
+}
+
+function updateButtons() {
+  const btns = document.querySelectorAll('.btn');
+  const maxW = Math.min(CONFIG.maxWager, state.bank1);
+  btns.forEach((btn, i) => {
+    const n = i + 1;
+    if (phase === 'gameover') {
+      btn.textContent = n === 2 ? 'Play Again' : '';
+      btn.classList.toggle('disabled', n !== 2);
+      if (n === 2) btn.onclick = () => { resetGame(); };
+    } else {
+      btn.textContent = `🪙 ${n}`;
+      btn.classList.toggle('disabled', n > maxW || phase !== 'choosing');
+      btn.onclick = () => wager(n);
+    }
+  });
+}
+
+// --- Rendering ---
+function drawCoin(x, y, isHeads, size=28, alpha=1) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.beginPath();
+  ctx.arc(x, y, size, 0, Math.PI * 2);
+  const grad = ctx.createRadialGradient(x - size*0.3, y - size*0.3, size*0.1, x, y, size);
+  if (isHeads) {
+    grad.addColorStop(0, '#ffe87c');
+    grad.addColorStop(1, '#c89b3c');
+  } else {
+    grad.addColorStop(0, '#8899aa');
+    grad.addColorStop(1, '#445566');
+  }
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = isHeads ? '#f0d060' : '#667788';
+  ctx.stroke();
+  // Letter
+  ctx.fillStyle = isHeads ? '#7a6020' : '#334455';
+  ctx.font = `bold ${size * 0.8}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(isHeads ? 'H' : 'T', x, y + 1);
+  ctx.restore();
+}
+
+function drawSpinningCoin(x, y, t, size=28) {
+  // Horizontal squash for spinning effect
+  const scale = Math.abs(Math.cos(t * 8));
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(Math.max(0.1, scale), 1);
+  ctx.beginPath();
+  ctx.arc(0, 0, size, 0, Math.PI * 2);
+  const grad = ctx.createRadialGradient(-size*0.2, -size*0.2, size*0.1, 0, 0, size);
+  grad.addColorStop(0, '#ffe87c');
+  grad.addColorStop(1, '#997722');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#c89b3c';
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawBank(x, y, count, maxCount, label, isPlayer) {
+  ctx.fillStyle = '#667';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x, y - 18);
+
+  const coinSize = 12;
+  const gap = 28;
+  const startX = x - (maxCount - 1) * gap / 2;
+
+  for (let i = 0; i < maxCount; i++) {
+    const cx = startX + i * gap;
+    if (i < count) {
+      drawCoin(cx, y, true, coinSize, 1);
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx, y, coinSize, 0, Math.PI * 2);
+      ctx.strokeStyle = '#222';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  }
+}
+
+function drawScore(x, y, score, maxScore, label) {
+  ctx.fillStyle = '#889';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, x, y - 12);
+
+  const gap = 30;
+  const startX = x - (maxScore - 1) * gap / 2;
+  for (let i = 0; i < maxScore; i++) {
+    const sx = startX + i * gap;
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = i < score ? '#f0d060' : '#333';
+    ctx.fillText('★', sx, y + 8);
+  }
+}
+
+function drawWinProb() {
+  // Show current win probability (d_global approximation)
+  // Simple approximation: based on score difference and bank difference
+  const scoreDiff = state.score1 - state.score2;
+  const bankDiff = (state.bank1 - state.bank2) / CONFIG.maxBank;
+  const approxProb = 0.5 + scoreDiff * 0.15 + bankDiff * 0.05;
+  const prob = Math.max(0.05, Math.min(0.95, approxProb));
+
+  const barX = 40, barY = H - 30, barW = W - 80, barH = 8;
+  ctx.fillStyle = '#151822';
+  ctx.fillRect(barX, barY, barW, barH);
+
+  // Player portion (gold)
+  const playerW = barW * prob;
+  ctx.fillStyle = '#c89b3c';
+  ctx.fillRect(barX, barY, playerW, barH);
+
+  // Opponent portion (red)
+  ctx.fillStyle = '#884444';
+  ctx.fillRect(barX + playerW, barY, barW - playerW, barH);
+
+  ctx.fillStyle = '#556';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(`You ${Math.round(prob*100)}%`, barX, barY - 3);
+  ctx.textAlign = 'right';
+  ctx.fillText(`${Math.round((1-prob)*100)}% CPU`, barX + barW, barY - 3);
+}
+
+function render() {
+  // Shake
+  let ox = 0, oy = 0;
+  if (shakeTimer > 0) {
+    ox = (Math.random() - 0.5) * shakeTimer * 1.5;
+    oy = (Math.random() - 0.5) * shakeTimer * 1.5;
+    shakeTimer--;
+  }
+
+  ctx.save();
+  ctx.translate(ox, oy);
+
+  // Background
+  ctx.fillStyle = '#0a0c14';
+  ctx.fillRect(0, 0, W, H);
+
+  // Title
+  ctx.fillStyle = '#c89b3c';
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('COIN DUEL', W/2, 30);
+
+  // Scores
+  drawScore(W/2 - 120, 65, state.score2, CONFIG.roundsToWin, 'OPPONENT');
+  drawScore(W/2 + 120, 65, state.score1, CONFIG.roundsToWin, 'YOU');
+
+  // VS
+  ctx.fillStyle = '#445';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('vs', W/2, 70);
+
+  // Banks
+  drawBank(W/2, 115, state.bank2, CONFIG.maxBank, 'Opponent Bank', false);
+  drawBank(W/2, 410, state.bank1, CONFIG.maxBank, 'Your Bank', true);
+
+  // Flip area
+  if (flipData) {
+    const { w1, w2, flips1, flips2, revealed, totalCoins } = flipData;
+
+    // Opponent's coins (top)
+    const topY = 185;
+    const topStartX = W/2 - (w2 - 1) * 35;
+    for (let i = 0; i < w2; i++) {
+      const cx = topStartX + i * 70;
+      if (i < Math.floor(revealed * w2 / totalCoins)) {
+        drawCoin(cx, topY, flips2[i], 24);
+      } else if (i === Math.floor(revealed * w2 / totalCoins) && revealed < totalCoins) {
+        drawSpinningCoin(cx, topY, Date.now() / 1000, 24);
+      } else {
+        drawSpinningCoin(cx, topY, Date.now() / 1000 + i * 0.3, 24);
+      }
+    }
+
+    // Wager labels
+    ctx.fillStyle = '#889';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Wagered: ${w2}`, W/2, topY + 40);
+
+    // Player's coins (bottom)
+    const botY = 320;
+    const botStartX = W/2 - (w1 - 1) * 35;
+    const p1RevealStart = w2;
+    for (let i = 0; i < w1; i++) {
+      const cx = botStartX + i * 70;
+      const revIdx = p1RevealStart + i;
+      if (revIdx < revealed) {
+        drawCoin(cx, botY, flips1[i], 24);
+      } else if (revIdx === revealed && revealed < totalCoins) {
+        drawSpinningCoin(cx, botY, Date.now() / 1000, 24);
+      } else {
+        drawSpinningCoin(cx, botY, Date.now() / 1000 + i * 0.3, 24);
+      }
+    }
+    ctx.fillText(`Wagered: ${w1}`, W/2, botY + 40);
+
+    // Divider
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(W/2 - 100, 250);
+    ctx.lineTo(W/2 + 100, 250);
+    ctx.stroke();
+
+    // Heads count after all revealed
+    if (revealed >= totalCoins && !flipData.settled) {
+      ctx.fillStyle = '#f0d060';
+      ctx.font = 'bold 18px sans-serif';
+      ctx.fillText(`${flipData.heads2} heads`, W/2, topY - 35);
+      ctx.fillText(`${flipData.heads1} heads`, W/2, botY + 60);
+    }
+  } else if (phase === 'choosing') {
+    // Show "Choose your wager" in flip area
+    ctx.fillStyle = '#334';
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Choose your wager below', W/2, 250);
+
+    // Show wager probabilities
+    const maxW = Math.min(CONFIG.maxWager, state.bank1);
+    const aiW = aiWager();
+    ctx.fillStyle = '#2a2d3a';
+    ctx.font = '11px sans-serif';
+    for (let w = 1; w <= 3; w++) {
+      if (w > maxW) continue;
+      const prob = winProb(w, aiW);
+      ctx.fillText(`${Math.round(prob*100)}% vs CPU`, 100 + (w-1) * 200, 280);
+    }
+  }
+
+  // Win probability bar
+  drawWinProb();
+
+  // Message
+  if (messageTimer > 0) {
+    const alpha = Math.min(1, messageTimer / 30);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = message.includes('WIN') && !message.includes('round') ? '#f0d060' :
+                    message.includes('LOSE') ? '#ff4444' :
+                    message.includes('DRAW') ? '#88aaff' : '#c8ccd4';
+    ctx.font = `bold ${message.length < 12 ? 28 : 18}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(message, W/2, 250);
+    ctx.globalAlpha = 1;
+    messageTimer--;
+  }
+
+  // Particles
+  particles.forEach(p => {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+    ctx.globalAlpha = 1;
+  });
+
+  ctx.restore();
+}
+
+function update() {
+  // Update flip animation
+  if (flipData && phase === 'flipping') {
+    flipData.revealTimer++;
+    if (flipData.revealTimer % 12 === 0 && flipData.revealed < flipData.totalCoins) {
+      flipData.revealed++;
+      sfxFlip();
+
+      // Sound for revealed coin
+      const revIdx = flipData.revealed - 1;
+      if (revIdx < flipData.w2) {
+        // Opponent coin
+        if (flipData.flips2[revIdx]) sfxHeads(); else sfxTails();
+      } else {
+        // Player coin
+        const pi = revIdx - flipData.w2;
+        if (flipData.flips1[pi]) sfxHeads(); else sfxTails();
+      }
+    }
+
+    // All revealed — settle after pause
+    if (flipData.revealed >= flipData.totalCoins && !flipData.settled) {
+      flipData.settled = true;
+      setTimeout(() => settleRound(), 600);
+    }
+  }
+
+  // Update particles
+  particles = particles.filter(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.05;
+    p.life -= p.decay;
+    return p.life > 0;
+  });
+
+  if (messageTimer > 0) messageTimer--;
+}
+
+// Win probability calculation (same as C# version)
+function binomial(n, k) {
+  if (k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  let r = 1;
+  for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return r;
+}
+
+function winProb(n1, n2) {
+  let pw1 = 0, pw2 = 0;
+  const t1 = 1 << n1, t2 = 1 << n2;
+  for (let h1 = 0; h1 <= n1; h1++) {
+    const p1 = binomial(n1, h1) / t1;
+    for (let h2 = 0; h2 <= n2; h2++) {
+      const p2 = binomial(n2, h2) / t2;
+      if (h1 > h2) pw1 += p1 * p2;
+      else if (h2 > h1) pw2 += p1 * p2;
+    }
+  }
+  const d = pw1 + pw2;
+  return d > 0 ? pw1 / d : 0.5;
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  if (phase === 'gameover' && (e.key === ' ' || e.key === 'Enter')) { resetGame(); return; }
+  if (e.key === '1') wager(1);
+  if (e.key === '2') wager(2);
+  if (e.key === '3') wager(3);
+});
+
+// Game loop
+function gameLoop() {
+  update();
+  render();
+  updateStatsUI();
+  requestAnimationFrame(gameLoop);
+}
+
+updateButtons();
+updateStatsUI();
+gameLoop();
+</script>
+</body>
+</html>
