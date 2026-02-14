@@ -1,0 +1,1243 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Rage Arena</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #080a12;
+  color: #c8ccd4;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+#gameContainer {
+  position: relative;
+  width: 800px;
+  max-width: 100vw;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  image-rendering: auto;
+}
+#controls {
+  display: flex;
+  gap: 10px;
+  padding: 12px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 800px;
+}
+.btn {
+  background: linear-gradient(180deg, #1a1e2e 0%, #121520 100%);
+  border: 1px solid #2a3050;
+  color: #c8ccd4;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 120px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.btn:hover:not(:disabled) {
+  border-color: #4a5580;
+  background: linear-gradient(180deg, #222840 0%, #181c2c 100%);
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.btn-strike { border-color: #3060c0; }
+.btn-strike:hover:not(:disabled) { border-color: #5080e0; box-shadow: 0 0 15px rgba(48,96,192,0.3); }
+.btn-heavy { border-color: #c06030; }
+.btn-heavy:hover:not(:disabled) { border-color: #e08050; box-shadow: 0 0 15px rgba(192,96,48,0.3); }
+.btn-rage { border-color: #c03060; }
+.btn-rage:hover:not(:disabled) { border-color: #e05080; box-shadow: 0 0 15px rgba(192,48,96,0.3); }
+.btn-guard { border-color: #30c060; }
+.btn-guard:hover:not(:disabled) { border-color: #50e080; box-shadow: 0 0 15px rgba(48,192,96,0.3); }
+.btn-play {
+  background: linear-gradient(180deg, #1a3060 0%, #102040 100%);
+  border-color: #3070c0;
+  font-size: 18px;
+  padding: 14px 40px;
+  min-width: 160px;
+}
+.btn-play:hover:not(:disabled) {
+  border-color: #5090e0;
+  box-shadow: 0 0 20px rgba(48,112,192,0.4);
+}
+.btn-sub {
+  font-size: 11px;
+  color: #7080a0;
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+}
+#log {
+  width: 100%;
+  max-width: 800px;
+  height: 72px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8090a8;
+  background: #0c0e18;
+  border-radius: 6px;
+  border: 1px solid #1a1e2e;
+}
+#log::-webkit-scrollbar { width: 4px; }
+#log::-webkit-scrollbar-track { background: transparent; }
+#log::-webkit-scrollbar-thumb { background: #2a3050; border-radius: 2px; }
+.log-player { color: #6090d0; }
+.log-enemy { color: #d06060; }
+.log-crit { color: #e0c040; font-weight: 600; }
+.log-rage { color: #d050a0; }
+.log-guard { color: #50c070; }
+.log-miss { color: #606880; font-style: italic; }
+#stats {
+  display: flex;
+  gap: 20px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #506080;
+}
+.stat-val { color: #8098c0; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+  <canvas id="canvas" width="800" height="500"></canvas>
+  <div id="controls"></div>
+  <div id="log"></div>
+  <div id="stats">
+    <span>Wins: <span class="stat-val" id="statWins">0</span></span>
+    <span>Losses: <span class="stat-val" id="statLosses">0</span></span>
+    <span>Streak: <span class="stat-val" id="statStreak">0</span></span>
+    <span>Best: <span class="stat-val" id="statBest">0</span></span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  RAGE ARENA — ToA-Based Turn Battle Game
+// ============================================================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = 800, H = 500;
+const controlsEl = document.getElementById('controls');
+const logEl = document.getElementById('log');
+
+// --- Audio Engine ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const g = audioCtx.createGain();
+  g.connect(audioCtx.destination);
+  const o = audioCtx.createOscillator();
+  o.connect(g);
+
+  switch(type) {
+    case 'hit':
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(200, now);
+      o.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      o.start(now); o.stop(now + 0.2);
+      break;
+    case 'heavy':
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(150, now);
+      o.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+      g.gain.setValueAtTime(0.2, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o.start(now); o.stop(now + 0.35);
+      // sub bass
+      const o2 = audioCtx.createOscillator();
+      const g2 = audioCtx.createGain();
+      o2.connect(g2); g2.connect(audioCtx.destination);
+      o2.type = 'sine'; o2.frequency.setValueAtTime(60, now);
+      g2.gain.setValueAtTime(0.2, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      o2.start(now); o2.stop(now + 0.4);
+      break;
+    case 'crit':
+      o.type = 'square'; o.frequency.setValueAtTime(400, now);
+      o.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+      o.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o.start(now); o.stop(now + 0.35);
+      break;
+    case 'miss':
+      o.type = 'sine'; o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+      g.gain.setValueAtTime(0.08, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      o.start(now); o.stop(now + 0.25);
+      break;
+    case 'guard':
+      o.type = 'triangle'; o.frequency.setValueAtTime(500, now);
+      o.frequency.exponentialRampToValueAtTime(700, now + 0.1);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      o.start(now); o.stop(now + 0.15);
+      break;
+    case 'rage':
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(100, now);
+      o.frequency.exponentialRampToValueAtTime(500, now + 0.15);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.4);
+      g.gain.setValueAtTime(0.2, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+      o.start(now); o.stop(now + 0.45);
+      break;
+    case 'win':
+      o.type = 'triangle';
+      [400,500,600,800].forEach((f,i) => {
+        o.frequency.setValueAtTime(f, now + i * 0.12);
+      });
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.setValueAtTime(0.12, now + 0.45);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      o.start(now); o.stop(now + 0.7);
+      break;
+    case 'lose':
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(250, now);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.6);
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      o.start(now); o.stop(now + 0.7);
+      break;
+    case 'select':
+      o.type = 'sine'; o.frequency.setValueAtTime(600, now);
+      o.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+      g.gain.setValueAtTime(0.06, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      o.start(now); o.stop(now + 0.08);
+      break;
+    case 'counter':
+      o.type = 'square'; o.frequency.setValueAtTime(120, now);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.25);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.start(now); o.stop(now + 0.3);
+      break;
+  }
+}
+
+// --- Particle System ---
+const particles = [];
+function spawnParticles(x, y, color, count, speed, life, size) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = (Math.random() * 0.6 + 0.4) * speed;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd - Math.random() * 1.5,
+      life: life * (0.7 + Math.random() * 0.6),
+      maxLife: life * (0.7 + Math.random() * 0.6),
+      color,
+      size: size * (0.5 + Math.random() * 0.5),
+      gravity: 0.08
+    });
+  }
+}
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += p.gravity * dt;
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+function drawParticles() {
+  for (const p of particles) {
+    const alpha = Math.max(0, p.life / p.maxLife);
+    const sz = p.size * alpha;
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, sz, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Floating Text System ---
+const floatingTexts = [];
+function spawnFloatingText(x, y, text, color, size) {
+  floatingTexts.push({ x, y, text, color, size: size || 24, life: 60, maxLife: 60, vy: -1.5 });
+}
+function updateFloatingTexts(dt) {
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const t = floatingTexts[i];
+    t.y += t.vy * dt;
+    t.vy *= 0.98;
+    t.life -= dt;
+    if (t.life <= 0) floatingTexts.splice(i, 1);
+  }
+}
+function drawFloatingTexts() {
+  for (const t of floatingTexts) {
+    const alpha = Math.max(0, t.life / t.maxLife);
+    const scale = 1 + (1 - alpha) * 0.3;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `bold ${Math.round(t.size * scale)}px 'Segoe UI', system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#000';
+    ctx.fillText(t.text, t.x + 2, t.y + 2);
+    ctx.fillStyle = t.color;
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+  }
+}
+
+// --- Screen Shake ---
+let shakeAmount = 0;
+let shakeDuration = 0;
+function triggerShake(amount, duration) {
+  shakeAmount = amount;
+  shakeDuration = duration;
+}
+function getShakeOffset() {
+  if (shakeDuration <= 0) return { x: 0, y: 0 };
+  const intensity = shakeDuration / 20 * shakeAmount;
+  return {
+    x: (Math.random() - 0.5) * intensity * 2,
+    y: (Math.random() - 0.5) * intensity * 2
+  };
+}
+
+// --- Fighter Drawing ---
+function drawFighter(x, y, color, hp, maxHp, rage, isGuarding, facingLeft, hitFlash, rageAura, name) {
+  ctx.save();
+
+  // Rage aura glow
+  if (rage > 0 && rageAura > 0) {
+    const glowRadius = 40 + rage * 8;
+    const gradient = ctx.createRadialGradient(x, y - 20, 10, x, y - 20, glowRadius);
+    const rageColor = facingLeft ? 'rgba(200,50,80,' : 'rgba(80,50,200,';
+    gradient.addColorStop(0, rageColor + (0.15 * rageAura).toFixed(3) + ')');
+    gradient.addColorStop(0.5, rageColor + (0.06 * rageAura).toFixed(3) + ')');
+    gradient.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x - glowRadius, y - 20 - glowRadius, glowRadius * 2, glowRadius * 2);
+  }
+
+  // Hit flash
+  const flashColor = hitFlash > 0 ? `rgba(255,255,255,${hitFlash * 0.6})` : null;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 48, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Guard shield
+  if (isGuarding) {
+    ctx.strokeStyle = '#50e080';
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.006) * 0.15;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 10, 35, 50, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  const dir = facingLeft ? -1 : 1;
+
+  // Legs
+  ctx.strokeStyle = flashColor || color;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - 6, y + 20);
+  ctx.lineTo(x - 10, y + 45);
+  ctx.moveTo(x + 6, y + 20);
+  ctx.lineTo(x + 10, y + 45);
+  ctx.stroke();
+
+  // Body
+  ctx.fillStyle = flashColor || color;
+  ctx.beginPath();
+  ctx.roundRect(x - 12, y - 15, 24, 38, 4);
+  ctx.fill();
+
+  // Body shading
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.roundRect(x - 12 + (facingLeft ? 0 : 12), y - 15, 12, 38, 2);
+  ctx.fill();
+
+  // Arms
+  ctx.strokeStyle = flashColor || color;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x - 12 * dir, y - 5);
+  ctx.lineTo(x - 22 * dir, y + 10);
+  ctx.moveTo(x + 12 * dir, y - 5);
+  ctx.lineTo(x + 22 * dir, y + 5);
+  ctx.stroke();
+
+  // Head
+  ctx.fillStyle = flashColor || color;
+  ctx.beginPath();
+  ctx.arc(x, y - 28, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  const eyeX = facingLeft ? -4 : 4;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x + eyeX - 3, y - 30, 3, 0, Math.PI * 2);
+  ctx.arc(x + eyeX + 5, y - 30, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(x + eyeX - 3 + (facingLeft ? -0.5 : 0.5), y - 30, 1.5, 0, Math.PI * 2);
+  ctx.arc(x + eyeX + 5 + (facingLeft ? -0.5 : 0.5), y - 30, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Rage marks (lines near head when rage > 2)
+  if (rage > 2) {
+    ctx.strokeStyle = facingLeft ? '#ff4060' : '#6060ff';
+    ctx.lineWidth = 2;
+    const rageLines = Math.min(rage, 6);
+    for (let i = 0; i < rageLines; i++) {
+      const angle = -Math.PI / 2 + (i / (rageLines - 1 || 1) - 0.5) * Math.PI * 0.8;
+      const r1 = 20 + Math.sin(Date.now() * 0.005 + i) * 2;
+      const r2 = r1 + 6;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(angle) * r1, y - 28 + Math.sin(angle) * r1);
+      ctx.lineTo(x + Math.cos(angle) * r2, y - 28 + Math.sin(angle) * r2);
+      ctx.stroke();
+    }
+  }
+
+  // HP Bar
+  const barW = 60, barH = 6;
+  const barX = x - barW / 2, barY = y - 55;
+  ctx.fillStyle = '#1a1020';
+  ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+  const hpRatio = Math.max(0, hp / maxHp);
+  const hpColor = hpRatio > 0.5 ? '#40c070' : hpRatio > 0.25 ? '#d0a030' : '#d04040';
+  ctx.fillStyle = hpColor;
+  ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+  // Rage Bar (under HP)
+  const rageBarY = barY + barH + 3;
+  const rageBarH = 4;
+  ctx.fillStyle = '#1a1020';
+  ctx.fillRect(barX - 1, rageBarY - 1, barW + 2, rageBarH + 2);
+  if (rage > 0) {
+    const rageRatio = Math.min(1, rage / 10);
+    const rGrad = ctx.createLinearGradient(barX, 0, barX + barW * rageRatio, 0);
+    rGrad.addColorStop(0, '#a030c0');
+    rGrad.addColorStop(1, '#e04080');
+    ctx.fillStyle = rGrad;
+    ctx.fillRect(barX, rageBarY, barW * rageRatio, rageBarH);
+  }
+
+  // Name
+  ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#506080';
+  ctx.fillText(name, x, barY - 6);
+
+  // HP text
+  ctx.font = '10px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#8090a8';
+  ctx.fillText(`${hp}/${maxHp}`, x, barY + barH + rageBarH + 14);
+
+  ctx.restore();
+}
+
+// --- Fighter Animation ---
+class FighterAnim {
+  constructor(baseX, baseY) {
+    this.baseX = baseX;
+    this.baseY = baseY;
+    this.x = baseX;
+    this.y = baseY;
+    this.hitFlash = 0;
+    this.rageAura = 0;
+    this.targetRageAura = 0;
+    this.bobPhase = Math.random() * Math.PI * 2;
+    // Attack animation
+    this.attacking = false;
+    this.attackX = 0;
+    this.attackPhase = 0;
+    this.attackTarget = null;
+  }
+
+  update(dt, rage) {
+    this.bobPhase += 0.03 * dt;
+    this.y = this.baseY + Math.sin(this.bobPhase) * 2;
+
+    if (this.hitFlash > 0) this.hitFlash -= 0.03 * dt;
+    this.targetRageAura = rage > 0 ? Math.min(1, rage / 5) : 0;
+    this.rageAura += (this.targetRageAura - this.rageAura) * 0.05 * dt;
+
+    // Attack animation
+    if (this.attacking) {
+      this.attackPhase += 0.06 * dt;
+      if (this.attackPhase < 1) {
+        // Lunge forward
+        const t = Math.sin(this.attackPhase * Math.PI);
+        this.x = this.baseX + this.attackX * t;
+      } else {
+        this.attacking = false;
+        this.attackPhase = 0;
+        this.x = this.baseX;
+      }
+    }
+  }
+
+  startAttack(targetX) {
+    this.attacking = true;
+    this.attackPhase = 0;
+    this.attackX = (targetX - this.baseX) * 0.4;
+  }
+
+  flash() {
+    this.hitFlash = 1;
+  }
+}
+
+// --- Game State ---
+const MAX_HP = 10;
+const CRIT_CHANCE = 0.1;
+const HEAVY_HIT_CHANCE = 0.5;
+
+let state = 'title'; // title, battle, animating, gameover
+let player = { hp: MAX_HP, rage: 0, guarding: false };
+let enemy = { hp: MAX_HP, rage: 0, guarding: false };
+let playerAnim, enemyAnim;
+let turnQueue = []; // sequence of events to animate
+let currentAnim = null;
+let animTimer = 0;
+let canAct = false;
+let stats = { wins: 0, losses: 0, streak: 0, best: 0 };
+let turnCount = 0;
+let titlePulse = 0;
+
+// Load stats
+try {
+  const saved = localStorage.getItem('rageArena_stats');
+  if (saved) stats = JSON.parse(saved);
+} catch(e) {}
+
+function saveStats() {
+  try { localStorage.setItem('rageArena_stats', JSON.stringify(stats)); } catch(e) {}
+}
+
+function resetBattle() {
+  player = { hp: MAX_HP, rage: 0, guarding: false };
+  enemy = { hp: MAX_HP, rage: 0, guarding: false };
+  playerAnim = new FighterAnim(230, 280);
+  enemyAnim = new FighterAnim(570, 280);
+  turnQueue = [];
+  currentAnim = null;
+  animTimer = 0;
+  canAct = true;
+  turnCount = 0;
+  logEl.innerHTML = '';
+  state = 'battle';
+  updateButtons();
+}
+
+// --- Log ---
+function addLog(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// --- AI ---
+function enemyDecide() {
+  // Weighted random with some strategy
+  const weights = { strike: 40, heavy: 20, rage: 0, guard: 20 };
+
+  // Use rage strike when rage >= 3
+  if (enemy.rage >= 3) weights.rage = 35 + enemy.rage * 5;
+  if (enemy.rage >= 5) { weights.rage = 60; weights.guard = 5; }
+
+  // Guard more when low HP
+  if (enemy.hp <= 3) { weights.guard = 35; weights.heavy = 10; }
+
+  // Heavy more when player is low
+  if (player.hp <= 3) { weights.heavy = 35; weights.strike = 25; }
+
+  // Guard less when enemy HP is very low (desperation)
+  if (enemy.hp <= 2 && enemy.rage >= 2) { weights.rage = 50; weights.guard = 5; }
+
+  const total = weights.strike + weights.heavy + weights.rage + weights.guard;
+  let r = Math.random() * total;
+  if (r < weights.strike) return 'strike';
+  r -= weights.strike;
+  if (r < weights.heavy) return 'heavy';
+  r -= weights.heavy;
+  if (r < weights.rage) return 'rage';
+  return 'guard';
+}
+
+// --- Combat Resolution ---
+function resolveAction(attacker, defender, action, isPlayer) {
+  const events = [];
+  const name = isPlayer ? 'You' : 'CPU';
+  const defName = isPlayer ? 'CPU' : 'You';
+
+  if (action === 'guard') {
+    attacker.guarding = true;
+    attacker.rage += 1;
+    events.push({
+      type: 'guard', isPlayer,
+      log: `<span class="log-guard">${name} raised guard! (+1 rage)</span>`
+    });
+    return events;
+  }
+
+  attacker.guarding = false;
+
+  if (action === 'strike') {
+    const isCrit = Math.random() < CRIT_CHANCE;
+    let dmg = isCrit ? 2 : 1;
+
+    if (defender.guarding) {
+      defender.guarding = false;
+      events.push({
+        type: 'blocked', isPlayer,
+        log: `<span class="log-guard">${defName} blocked the strike!</span>`
+      });
+      return events;
+    }
+
+    defender.hp = Math.max(0, defender.hp - dmg);
+    defender.rage += 1;
+    if (isCrit) defender.rage += 1;
+
+    events.push({
+      type: isCrit ? 'crit' : 'hit', isPlayer, dmg,
+      log: isCrit
+        ? `<span class="log-crit">${name} struck critically! ${dmg} damage!</span>`
+        : `<span class="log-player">${name} struck for ${dmg} damage.</span>`
+    });
+    return events;
+  }
+
+  if (action === 'heavy') {
+    const hits = Math.random() < HEAVY_HIT_CHANCE;
+
+    if (!hits) {
+      events.push({
+        type: 'miss', isPlayer,
+        log: `<span class="log-miss">${name} swung heavy and missed!</span>`
+      });
+      // Counter attack — free hit
+      if (attacker.guarding) attacker.guarding = false;
+      const counterDmg = 1;
+      attacker.hp = Math.max(0, attacker.hp - counterDmg);
+      attacker.rage += 1;
+      events.push({
+        type: 'counter', isPlayer: !isPlayer, dmg: counterDmg,
+        log: `<span class="log-enemy">${defName} countered for ${counterDmg}!</span>`
+      });
+      return events;
+    }
+
+    const isCrit = Math.random() < CRIT_CHANCE;
+    let dmg = isCrit ? 4 : 2;
+
+    if (defender.guarding) {
+      defender.guarding = false;
+      // Guard blocks only 1 damage from heavy
+      dmg = Math.max(1, dmg - 1);
+      defender.hp = Math.max(0, defender.hp - dmg);
+      defender.rage += 1;
+      if (isCrit) defender.rage += 1;
+      events.push({
+        type: isCrit ? 'crit' : 'heavy_partial', isPlayer, dmg,
+        log: `<span class="log-guard">${defName}'s guard absorbed some! ${dmg} damage dealt.</span>`
+      });
+      return events;
+    }
+
+    defender.hp = Math.max(0, defender.hp - dmg);
+    defender.rage += 1;
+    if (isCrit) defender.rage += 1;
+
+    events.push({
+      type: isCrit ? 'crit' : 'heavy', isPlayer, dmg,
+      log: isCrit
+        ? `<span class="log-crit">${name} landed a critical heavy! ${dmg} damage!</span>`
+        : `<span class="log-enemy">${name} smashed for ${dmg} damage!</span>`
+    });
+    return events;
+  }
+
+  if (action === 'rage') {
+    const rageDmg = attacker.rage;
+    const totalDmg = 1 + rageDmg;
+    attacker.rage = 0;
+
+    if (defender.guarding) {
+      defender.guarding = false;
+      const blocked = Math.min(2, totalDmg - 1);
+      const finalDmg = Math.max(1, totalDmg - blocked);
+      defender.hp = Math.max(0, defender.hp - finalDmg);
+      defender.rage += 1;
+      events.push({
+        type: 'rage_partial', isPlayer, dmg: finalDmg, rageDmg,
+        log: `<span class="log-rage">${name} unleashed rage! Guard absorbed ${blocked}, ${finalDmg} damage dealt!</span>`
+      });
+      return events;
+    }
+
+    const isCrit = Math.random() < CRIT_CHANCE;
+    const finalDmg = isCrit ? totalDmg * 2 : totalDmg;
+    defender.hp = Math.max(0, defender.hp - finalDmg);
+    defender.rage += Math.min(3, Math.ceil(finalDmg / 2));
+
+    events.push({
+      type: isCrit ? 'rage_crit' : 'rage', isPlayer, dmg: finalDmg, rageDmg,
+      log: isCrit
+        ? `<span class="log-crit">${name} unleashed CRITICAL rage! ${finalDmg} damage!</span>`
+        : `<span class="log-rage">${name} unleashed rage for ${finalDmg} damage! (1+${rageDmg} rage)</span>`
+    });
+    return events;
+  }
+
+  return events;
+}
+
+// --- Execute Turn ---
+function executeTurn(playerAction) {
+  ensureAudio();
+  playSound('select');
+  canAct = false;
+  turnCount++;
+
+  const enemyAction = enemyDecide();
+
+  // Resolve player action first, then enemy (if alive)
+  const playerEvents = resolveAction(player, enemy, playerAction, true);
+  let enemyEvents = [];
+  if (enemy.hp > 0) {
+    enemyEvents = resolveAction(enemy, player, enemyAction, false);
+  }
+
+  // Queue all events for animation
+  turnQueue = [...playerEvents, ...enemyEvents];
+
+  // Check game over after all events
+  if (player.hp <= 0 || enemy.hp <= 0) {
+    turnQueue.push({
+      type: player.hp <= 0 ? 'defeat' : 'victory',
+      log: player.hp <= 0
+        ? '<span class="log-enemy"><b>Defeat...</b></span>'
+        : '<span class="log-player"><b>Victory!</b></span>'
+    });
+  }
+
+  processNextEvent();
+  updateButtons();
+}
+
+function processNextEvent() {
+  if (turnQueue.length === 0) {
+    if (state === 'gameover') {
+      updateButtons();
+      return;
+    }
+    // Turn done, player can act again
+    canAct = true;
+    updateButtons();
+    return;
+  }
+
+  currentAnim = turnQueue.shift();
+  animTimer = 0;
+  state = 'animating';
+
+  // Log
+  addLog(currentAnim.log);
+
+  // Trigger visual effects
+  const ev = currentAnim;
+
+  if (ev.type === 'hit' || ev.type === 'heavy' || ev.type === 'heavy_partial') {
+    const target = ev.isPlayer ? enemyAnim : playerAnim;
+    const attacker = ev.isPlayer ? playerAnim : enemyAnim;
+    attacker.startAttack(target.baseX);
+    setTimeout(() => {
+      target.flash();
+      const color = ev.type === 'heavy' || ev.type === 'heavy_partial' ? '#e08040' : '#6090d0';
+      spawnParticles(target.x, target.y - 15, color, 12, 3, 25, 4);
+      spawnFloatingText(target.x, target.y - 65, `-${ev.dmg}`, color, ev.dmg > 1 ? 28 : 22);
+      playSound(ev.type === 'heavy' || ev.type === 'heavy_partial' ? 'heavy' : 'hit');
+      triggerShake(ev.dmg > 1 ? 4 : 2, 10);
+    }, 200);
+  }
+
+  if (ev.type === 'crit') {
+    const target = ev.isPlayer ? enemyAnim : playerAnim;
+    const attacker = ev.isPlayer ? playerAnim : enemyAnim;
+    attacker.startAttack(target.baseX);
+    setTimeout(() => {
+      target.flash();
+      spawnParticles(target.x, target.y - 15, '#e0c040', 20, 4, 30, 5);
+      spawnParticles(target.x, target.y - 15, '#fff', 8, 3, 20, 3);
+      spawnFloatingText(target.x, target.y - 65, `-${ev.dmg} CRIT!`, '#e0c040', 32);
+      playSound('crit');
+      triggerShake(6, 15);
+    }, 200);
+  }
+
+  if (ev.type === 'rage' || ev.type === 'rage_partial') {
+    const target = ev.isPlayer ? enemyAnim : playerAnim;
+    const attacker = ev.isPlayer ? playerAnim : enemyAnim;
+    attacker.startAttack(target.baseX);
+    setTimeout(() => {
+      target.flash();
+      spawnParticles(target.x, target.y - 15, '#d050a0', 18, 4, 30, 5);
+      spawnParticles(target.x, target.y - 15, '#a030c0', 10, 3, 25, 4);
+      spawnFloatingText(target.x, target.y - 65, `-${ev.dmg}`, '#d050a0', Math.min(36, 22 + ev.dmg * 2));
+      playSound('rage');
+      triggerShake(Math.min(8, 3 + ev.dmg), 12);
+    }, 200);
+  }
+
+  if (ev.type === 'rage_crit') {
+    const target = ev.isPlayer ? enemyAnim : playerAnim;
+    const attacker = ev.isPlayer ? playerAnim : enemyAnim;
+    attacker.startAttack(target.baseX);
+    setTimeout(() => {
+      target.flash();
+      spawnParticles(target.x, target.y - 15, '#e0c040', 25, 5, 35, 6);
+      spawnParticles(target.x, target.y - 15, '#d050a0', 15, 4, 30, 5);
+      spawnParticles(target.x, target.y - 15, '#fff', 10, 3, 20, 3);
+      spawnFloatingText(target.x, target.y - 65, `-${ev.dmg} RAGE CRIT!`, '#e0c040', 36);
+      playSound('rage');
+      setTimeout(() => playSound('crit'), 100);
+      triggerShake(10, 20);
+    }, 200);
+  }
+
+  if (ev.type === 'miss') {
+    const attacker = ev.isPlayer ? playerAnim : enemyAnim;
+    const target = ev.isPlayer ? enemyAnim : playerAnim;
+    attacker.startAttack(target.baseX);
+    setTimeout(() => {
+      spawnFloatingText(target.x + 30, target.y - 65, 'MISS', '#606880', 20);
+      playSound('miss');
+    }, 250);
+  }
+
+  if (ev.type === 'counter') {
+    const target = ev.isPlayer ? enemyAnim : playerAnim;
+    const attacker = ev.isPlayer ? playerAnim : enemyAnim;
+    setTimeout(() => {
+      attacker.startAttack(target.baseX);
+      setTimeout(() => {
+        target.flash();
+        spawnParticles(target.x, target.y - 15, '#d06060', 10, 3, 20, 3);
+        spawnFloatingText(target.x, target.y - 65, `-${ev.dmg} Counter!`, '#d06060', 22);
+        playSound('counter');
+        triggerShake(3, 8);
+      }, 200);
+    }, 300);
+  }
+
+  if (ev.type === 'guard') {
+    const anim = ev.isPlayer ? playerAnim : enemyAnim;
+    spawnParticles(anim.baseX, anim.baseY - 15, '#50e080', 8, 2, 20, 3);
+    spawnFloatingText(anim.baseX, anim.baseY - 65, 'GUARD +1', '#50e080', 20);
+    playSound('guard');
+  }
+
+  if (ev.type === 'blocked') {
+    const defender = ev.isPlayer ? enemyAnim : playerAnim;
+    spawnParticles(defender.baseX, defender.baseY - 15, '#50e080', 15, 3, 25, 4);
+    spawnFloatingText(defender.baseX, defender.baseY - 65, 'BLOCKED!', '#50e080', 26);
+    playSound('guard');
+    triggerShake(2, 5);
+  }
+
+  if (ev.type === 'victory') {
+    state = 'gameover';
+    stats.wins++;
+    stats.streak++;
+    if (stats.streak > stats.best) stats.best = stats.streak;
+    saveStats();
+    spawnParticles(enemyAnim.baseX, enemyAnim.baseY - 20, '#d04040', 30, 5, 40, 5);
+    spawnParticles(enemyAnim.baseX, enemyAnim.baseY - 20, '#ff8060', 20, 4, 35, 4);
+    setTimeout(() => playSound('win'), 400);
+    triggerShake(5, 15);
+  }
+
+  if (ev.type === 'defeat') {
+    state = 'gameover';
+    stats.losses++;
+    stats.streak = 0;
+    saveStats();
+    spawnParticles(playerAnim.baseX, playerAnim.baseY - 20, '#3060c0', 30, 5, 40, 5);
+    spawnParticles(playerAnim.baseX, playerAnim.baseY - 20, '#6090ff', 20, 4, 35, 4);
+    setTimeout(() => playSound('lose'), 400);
+    triggerShake(5, 15);
+  }
+
+  // Wait for animation, then next event
+  const delay = ev.type === 'counter' ? 900 : ev.type === 'guard' || ev.type === 'blocked' ? 500 : 650;
+  setTimeout(() => processNextEvent(), delay);
+}
+
+// --- Background & Arena ---
+function drawArena() {
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#080a12');
+  bg.addColorStop(0.6, '#0c1020');
+  bg.addColorStop(1, '#101828');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  // Floor
+  const floorY = 330;
+  ctx.fillStyle = '#0e1220';
+  ctx.fillRect(0, floorY, W, H - floorY);
+
+  // Floor line
+  ctx.strokeStyle = '#1a2040';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(60, floorY);
+  ctx.lineTo(W - 60, floorY);
+  ctx.stroke();
+
+  // Grid lines on floor (perspective)
+  ctx.strokeStyle = '#121830';
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i < 8; i++) {
+    const y = floorY + 20 + i * 22;
+    ctx.beginPath();
+    ctx.moveTo(60 - i * 5, y);
+    ctx.lineTo(W - 60 + i * 5, y);
+    ctx.stroke();
+  }
+
+  // Arena walls (subtle)
+  ctx.strokeStyle = '#1a2040';
+  ctx.lineWidth = 2;
+  // Left wall
+  ctx.beginPath();
+  ctx.moveTo(80, 80);
+  ctx.lineTo(60, floorY);
+  ctx.stroke();
+  // Right wall
+  ctx.beginPath();
+  ctx.moveTo(W - 80, 80);
+  ctx.lineTo(W - 60, floorY);
+  ctx.stroke();
+  // Top beam
+  ctx.beginPath();
+  ctx.moveTo(80, 80);
+  ctx.lineTo(W - 80, 80);
+  ctx.stroke();
+
+  // VS text
+  ctx.save();
+  ctx.globalAlpha = 0.06;
+  ctx.font = 'bold 120px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('VS', W / 2, 280);
+  ctx.restore();
+}
+
+// --- Title Screen ---
+function drawTitle() {
+  drawArena();
+  titlePulse += 0.02;
+
+  // Title
+  ctx.save();
+  ctx.textAlign = 'center';
+
+  // Glow
+  ctx.shadowColor = '#4060c0';
+  ctx.shadowBlur = 30 + Math.sin(titlePulse) * 10;
+  ctx.font = 'bold 56px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#c0d0f0';
+  ctx.fillText('RAGE ARENA', W / 2, 180);
+  ctx.shadowBlur = 0;
+
+  // Subtitle
+  ctx.font = '16px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#506080';
+  ctx.fillText('Turn-based combat with rage mechanics', W / 2, 220);
+
+  // Animated fighters
+  const t = Date.now() * 0.001;
+  const p1x = 250 + Math.sin(t * 1.2) * 5;
+  const p2x = 550 + Math.sin(t * 1.5 + 1) * 5;
+  drawFighter(p1x, 300, '#4070c0', 10, 10, 2, false, false, 0, 0.3, 'PLAYER');
+  drawFighter(p2x, 300, '#c04050', 10, 10, 2, false, true, 0, 0.3, 'CPU');
+
+  // Flicker idle particles
+  if (Math.random() < 0.15) {
+    spawnParticles(p1x + (Math.random()-0.5)*20, 285, '#4070c040', 1, 1, 20, 2);
+  }
+  if (Math.random() < 0.15) {
+    spawnParticles(p2x + (Math.random()-0.5)*20, 285, '#c0405040', 1, 1, 20, 2);
+  }
+
+  // How to play
+  ctx.font = '13px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#3a4868';
+  const tips = [
+    'Strike: reliable damage  |  Heavy: risky power  |  Rage: spend rage for burst  |  Guard: block + gain rage',
+    'Taking damage builds rage. Use it wisely.',
+    'Press SPACE or click PLAY to begin'
+  ];
+  tips.forEach((tip, i) => ctx.fillText(tip, W / 2, 400 + i * 22));
+
+  ctx.restore();
+}
+
+// --- Game Over Overlay ---
+function drawGameOver() {
+  const isWin = player.hp > 0;
+  ctx.save();
+
+  // Dim overlay
+  ctx.fillStyle = 'rgba(4,5,10,0.6)';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.textAlign = 'center';
+
+  // Result
+  ctx.font = 'bold 48px "Segoe UI", system-ui, sans-serif';
+  ctx.shadowColor = isWin ? '#4080d0' : '#d04040';
+  ctx.shadowBlur = 25;
+  ctx.fillStyle = isWin ? '#80b0f0' : '#f06060';
+  ctx.fillText(isWin ? 'VICTORY' : 'DEFEAT', W / 2, 180);
+  ctx.shadowBlur = 0;
+
+  // Stats
+  ctx.font = '18px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#8090a8';
+  ctx.fillText(`Turns: ${turnCount}`, W / 2, 230);
+  ctx.fillText(`Your HP: ${player.hp}/${MAX_HP}  |  Enemy HP: ${enemy.hp}/${MAX_HP}`, W / 2, 260);
+  ctx.fillText(`Final Rage: Player ${player.rage} | CPU ${enemy.rage}`, W / 2, 288);
+
+  // Streak
+  if (stats.streak > 1) {
+    ctx.fillStyle = '#e0c040';
+    ctx.font = 'bold 16px "Segoe UI", system-ui, sans-serif';
+    ctx.fillText(`Win Streak: ${stats.streak}`, W / 2, 320);
+  }
+
+  ctx.restore();
+}
+
+// --- UI Buttons ---
+function updateButtons() {
+  controlsEl.innerHTML = '';
+
+  if (state === 'title') {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-play';
+    btn.textContent = 'PLAY';
+    btn.onclick = () => { ensureAudio(); resetBattle(); };
+    controlsEl.appendChild(btn);
+    return;
+  }
+
+  if (state === 'gameover') {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-play';
+    btn.textContent = 'PLAY AGAIN';
+    btn.onclick = () => { ensureAudio(); resetBattle(); };
+    controlsEl.appendChild(btn);
+    updateStatsDisplay();
+    return;
+  }
+
+  const actions = [
+    { id: 'strike', label: 'Strike [Q]', sub: '1 dmg, sure hit', cls: 'btn-strike' },
+    { id: 'heavy', label: 'Heavy [W]', sub: '2 dmg, 50% hit', cls: 'btn-heavy' },
+    { id: 'rage', label: 'Rage [E]', sub: `1+${player.rage} dmg`, cls: 'btn-rage' },
+    { id: 'guard', label: 'Guard [R]', sub: 'block, +1 rage', cls: 'btn-guard' },
+  ];
+
+  for (const a of actions) {
+    const btn = document.createElement('button');
+    btn.className = `btn ${a.cls}`;
+    btn.innerHTML = `${a.label}<span class="btn-sub">${a.sub}</span>`;
+    btn.disabled = !canAct || (a.id === 'rage' && player.rage === 0);
+    btn.onclick = () => {
+      if (!canAct) return;
+      executeTurn(a.id);
+    };
+    controlsEl.appendChild(btn);
+  }
+
+  updateStatsDisplay();
+}
+
+function updateStatsDisplay() {
+  document.getElementById('statWins').textContent = stats.wins;
+  document.getElementById('statLosses').textContent = stats.losses;
+  document.getElementById('statStreak').textContent = stats.streak;
+  document.getElementById('statBest').textContent = stats.best;
+}
+
+// --- Render Loop ---
+let lastTime = performance.now();
+
+function render(now) {
+  const rawDt = Math.min(3, (now - lastTime) / 16.667);
+  lastTime = now;
+
+  // Shake
+  if (shakeDuration > 0) shakeDuration -= rawDt;
+  const shake = getShakeOffset();
+
+  ctx.save();
+  ctx.translate(shake.x, shake.y);
+
+  if (state === 'title') {
+    drawTitle();
+  } else {
+    drawArena();
+
+    // Draw fighters
+    if (playerAnim && enemyAnim) {
+      playerAnim.update(rawDt, player.rage);
+      enemyAnim.update(rawDt, enemy.rage);
+
+      drawFighter(
+        playerAnim.x, playerAnim.y, '#4070c0',
+        player.hp, MAX_HP, player.rage,
+        player.guarding, false, playerAnim.hitFlash,
+        playerAnim.rageAura, 'YOU'
+      );
+      drawFighter(
+        enemyAnim.x, enemyAnim.y, '#c04050',
+        enemy.hp, MAX_HP, enemy.rage,
+        enemy.guarding, true, enemyAnim.hitFlash,
+        enemyAnim.rageAura, 'CPU'
+      );
+    }
+
+    // Ambient dust
+    if (Math.random() < 0.03) {
+      spawnParticles(
+        100 + Math.random() * 600, 310 + Math.random() * 20,
+        '#1a2040', 1, 0.3, 40, 1.5
+      );
+    }
+
+    // Turn counter + status
+    ctx.font = '13px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#304060';
+    ctx.fillText(`Turn ${turnCount}`, W / 2, 100);
+    if (state !== 'gameover') {
+      ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = canAct ? '#4080b0' : '#403050';
+      ctx.fillText(canAct ? '— Your turn —' : '...', W / 2, 118);
+    }
+
+    if (state === 'gameover') {
+      drawGameOver();
+    }
+  }
+
+  // Particles & floating text (on top of everything)
+  updateParticles(rawDt);
+  drawParticles();
+  updateFloatingTexts(rawDt);
+  drawFloatingTexts();
+
+  ctx.restore();
+
+  requestAnimationFrame(render);
+}
+
+// --- Init ---
+updateButtons();
+updateStatsDisplay();
+requestAnimationFrame(render);
+
+// --- Responsive ---
+function onResize() {
+  const container = document.getElementById('gameContainer');
+  const maxW = Math.min(800, window.innerWidth - 16);
+  container.style.width = maxW + 'px';
+}
+window.addEventListener('resize', onResize);
+onResize();
+
+// --- Keyboard shortcuts ---
+document.addEventListener('keydown', (e) => {
+  if (state === 'title') {
+    if (e.key === 'Enter' || e.key === ' ') {
+      ensureAudio();
+      resetBattle();
+    }
+    return;
+  }
+  if (state === 'gameover') {
+    if (e.key === 'Enter' || e.key === ' ') {
+      ensureAudio();
+      resetBattle();
+    }
+    return;
+  }
+  if (!canAct) return;
+  if (e.key === '1' || e.key === 'q') executeTurn('strike');
+  if (e.key === '2' || e.key === 'w') executeTurn('heavy');
+  if ((e.key === '3' || e.key === 'e') && player.rage > 0) executeTurn('rage');
+  if (e.key === '4' || e.key === 'r') executeTurn('guard');
+});
+</script>
+</body>
+</html>
