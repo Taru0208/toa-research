@@ -1,0 +1,866 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ToA Calculator — Game Design Analysis</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
+  --border: #30363d; --text: #e6edf3; --text2: #8b949e;
+  --accent: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149;
+  --purple: #bc8cff;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; line-height: 1.5; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+.subtitle { color: var(--text2); margin-bottom: 24px; }
+.grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
+/* Panels */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.panel-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); margin-bottom: 12px; }
+
+/* Controls */
+.control-group { margin-bottom: 14px; }
+.control-label { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+.control-label span:last-child { color: var(--accent); font-weight: 600; font-family: monospace; }
+input[type="range"] { width: 100%; height: 6px; -webkit-appearance: none; background: var(--surface2); border-radius: 3px; outline: none; }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+select { width: 100%; padding: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; }
+
+/* Metrics */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.metric-card { background: var(--surface2); border-radius: 6px; padding: 10px; text-align: center; }
+.metric-value { font-size: 22px; font-weight: 700; font-family: monospace; }
+.metric-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.metric-card.highlight { border: 1px solid var(--accent); }
+
+/* Chart */
+.chart-container { position: relative; height: 200px; margin: 12px 0; }
+canvas { width: 100% !important; height: 100% !important; }
+
+/* Profile badge */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.badge.SNOWBALL { background: rgba(248, 81, 73, 0.2); color: var(--red); }
+.badge.BALANCED { background: rgba(88, 166, 255, 0.2); color: var(--accent); }
+.badge.DECAYING { background: rgba(210, 153, 34, 0.2); color: var(--orange); }
+.badge.SHALLOW { background: rgba(139, 148, 158, 0.2); color: var(--text2); }
+
+/* Strategy display */
+.strategy-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.strategy-row:last-child { border-bottom: none; }
+.strategy-name { font-weight: 500; }
+.strategy-bar { height: 6px; border-radius: 3px; margin: 0 8px; flex: 1; max-width: 120px; }
+
+/* Insight box */
+.insight { background: rgba(88, 166, 255, 0.08); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 6px 6px 0; margin-top: 12px; font-size: 13px; color: var(--text2); }
+.insight strong { color: var(--text); }
+
+/* Loading */
+.computing { color: var(--text2); font-style: italic; }
+
+/* Tabs */
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab { padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; background: var(--surface2); border: 1px solid transparent; color: var(--text2); }
+.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tab:hover:not(.active) { border-color: var(--border); color: var(--text); }
+
+/* Separator */
+.sep { border-top: 1px solid var(--border); margin: 14px 0; }
+
+/* Back link */
+.back { display: inline-block; color: var(--text2); text-decoration: none; font-size: 13px; margin-bottom: 16px; }
+.back:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+  <a href="{{ '/' | relative_url }}" class="back">&larr; Back to home</a>
+  <h1>Game Design Calculator</h1>
+  <p class="subtitle">Analyze your game's tension, agency, and fun alignment using ToA metrics.</p>
+
+  <div class="grid">
+    <!-- Left Panel: Controls -->
+    <div>
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-title">Game Model</div>
+        <div class="control-group">
+          <select id="gameSelect" onchange="onGameChange()">
+            <option value="coin">Coin Toss (simplest)</option>
+            <option value="bestofn">Best-of-N (coin flips)</option>
+            <option value="hp" selected>HP Combat (basic)</option>
+            <option value="combat">Tactical Combat (3 actions)</option>
+          </select>
+        </div>
+        <div id="gameDescription" style="font-size: 12px; color: var(--text2); margin-top: 4px;"></div>
+      </div>
+
+      <div class="panel" style="margin-bottom: 16px;" id="paramsPanel">
+        <div class="panel-title">Parameters</div>
+        <div id="paramsContainer"></div>
+      </div>
+
+      <div class="panel" id="analysisPanel">
+        <div class="panel-title">Analysis Settings</div>
+        <div class="control-group">
+          <div class="control-label"><span>Nest Level (depth)</span><span id="nestVal">5</span></div>
+          <input type="range" id="nestLevel" min="1" max="10" value="5" step="1" oninput="updateLabel('nestLevel','nestVal'); scheduleCompute()">
+        </div>
+        <div class="control-group">
+          <div class="control-label"><span>Perceptual Decay (α)</span><span id="alphaVal">0.50</span></div>
+          <input type="range" id="alpha" min="0.1" max="1.0" value="0.5" step="0.05" oninput="updateLabel('alpha','alphaVal',2); scheduleCompute()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Results -->
+    <div>
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-title">
+          Metrics
+          <span id="profileBadge" class="badge" style="margin-left: 8px;"></span>
+          <span id="computeTime" style="float: right; font-size: 11px; font-weight: 400; color: var(--text2);"></span>
+        </div>
+        <div class="metrics-grid" id="metricsGrid">
+          <div class="metric-card highlight"><div class="metric-value" id="mCFS">—</div><div class="metric-label">CFS (Fun Score)</div></div>
+          <div class="metric-card"><div class="metric-value" id="mGDS">—</div><div class="metric-label">GDS (Tension)</div></div>
+          <div class="metric-card"><div class="metric-value" id="mWGDS">—</div><div class="metric-label">wGDS (Perceived)</div></div>
+          <div class="metric-card"><div class="metric-value" id="mPI">—</div><div class="metric-label">PI (Agency)</div></div>
+          <div class="metric-card"><div class="metric-value" id="mCPG">—</div><div class="metric-label">CPG (Paradox)</div></div>
+          <div class="metric-card"><div class="metric-value" id="mENL">—</div><div class="metric-label">ENL (Depth)</div></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom: 16px;">
+        <div class="panel-title">Anticipation Components (A<sub>k</sub>)</div>
+        <div class="chart-container"><canvas id="chartCanvas"></canvas></div>
+        <div id="componentList" style="font-size: 12px; color: var(--text2); font-family: monospace;"></div>
+      </div>
+
+      <div class="panel" id="strategyPanel" style="margin-bottom: 16px; display: none;">
+        <div class="panel-title">Strategy Analysis</div>
+        <div id="strategyContent"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Design Insight</div>
+        <div id="insightContent" class="insight">Select a game model and adjust parameters to see analysis.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// ToA ENGINE — JavaScript port of Python anticipation_engine
+// ═══════════════════════════════════════════════════════════
+
+const MAX_NEST = 20;
+
+function toaAnalyze({ initialState, isTerminal, getTransitions, intrinsicDesire, nestLevel = 5 }) {
+  // Step 1: Topological sort via post-order DFS
+  const visited = new Set();
+  const statesR = [];
+  const stateKey = s => typeof s === 'string' ? s : JSON.stringify(s);
+
+  function dfs(s) {
+    const k = stateKey(s);
+    if (visited.has(k)) return;
+    visited.add(k);
+    for (const [prob, next] of getTransitions(s)) {
+      dfs(next);
+    }
+    statesR.push(s);
+  }
+  dfs(initialState);
+
+  const states = [...statesR].reverse();
+  const N = states.length;
+
+  // Build index for fast lookup
+  const stateIdx = new Map();
+  for (let i = 0; i < N; i++) stateIdx.set(stateKey(states[i]), i);
+
+  // Cache transitions
+  const transCache = new Map();
+  for (const s of states) {
+    const k = stateKey(s);
+    const trans = getTransitions(s).map(([p, ns]) => [p, stateIdx.get(stateKey(ns))]);
+    transCache.set(stateIdx.get(k), trans);
+  }
+
+  const gdsComponents = new Float64Array(nestLevel);
+  const aValues = new Array(nestLevel);
+
+  for (let comp = 0; comp < nestLevel; comp++) {
+    // Seed desire
+    const dLocal = new Float64Array(N);
+    if (comp === 0) {
+      for (let i = 0; i < N; i++) dLocal[i] = intrinsicDesire(states[i]);
+    } else {
+      for (let i = 0; i < N; i++) dLocal[i] = aValues[comp - 1][i];
+    }
+
+    // Propagate desire (reverse topological = statesR order)
+    const dGlobal = new Float64Array(N);
+    for (let i = 0; i < N; i++) dGlobal[i] = dLocal[i];
+    for (const s of statesR) {
+      const si = stateIdx.get(stateKey(s));
+      for (const [prob, ni] of transCache.get(si)) {
+        dGlobal[si] += dGlobal[ni] * prob;
+      }
+    }
+
+    // Compute A_k (anticipation variance)
+    const a = new Float64Array(N);
+    for (const s of statesR) {
+      const si = stateIdx.get(stateKey(s));
+      const trans = transCache.get(si);
+      if (trans.length === 0) { a[si] = 0; continue; }
+
+      let sumPd = 0;
+      for (const [prob, ni] of trans) {
+        sumPd += prob * (dGlobal[ni] - dGlobal[si]);
+      }
+      let wVar = 0;
+      for (const [prob, ni] of trans) {
+        const diff = (dGlobal[ni] - dGlobal[si]) - sumPd;
+        wVar += prob * diff * diff;
+      }
+      a[si] = Math.sqrt(wVar);
+    }
+    aValues[comp] = a;
+
+    // Forward propagation for GDS
+    // steps[stateIdx] = Map<stepCount, [reachProb, accA]>
+    const steps = new Array(N);
+    for (let i = 0; i < N; i++) steps[i] = new Map();
+
+    const initIdx = stateIdx.get(stateKey(initialState));
+    steps[initIdx].set(0, [1.0, a[initIdx]]);
+
+    for (const s of states) {
+      const si = stateIdx.get(stateKey(s));
+      for (const [prob, ni] of transCache.get(si)) {
+        for (const [stepI, [reachP, accA]] of steps[si]) {
+          const ns = stepI + 1;
+          if (!steps[ni].has(ns)) steps[ni].set(ns, [0, 0]);
+          const entry = steps[ni].get(ns);
+          entry[0] += reachP * prob;
+          entry[1] += accA * prob + a[ni] * reachP * prob;
+        }
+      }
+    }
+
+    // Sum at terminals
+    let totalEndProb = 0;
+    for (let i = 0; i < N; i++) {
+      if (isTerminal(states[i])) {
+        for (const [stepI, [reachP, accA]] of steps[i]) {
+          totalEndProb += reachP;
+          if (stepI > 0) gdsComponents[comp] += accA / stepI;
+        }
+      }
+    }
+  }
+
+  return {
+    gdsComponents: Array.from(gdsComponents),
+    gds: gdsComponents.reduce((a, b) => a + b, 0),
+    stateCount: N,
+    dGlobal0: null, // could store if needed
+  };
+}
+
+
+// ═══════════════════════════════════════════════
+// GAME MODELS
+// ═══════════════════════════════════════════════
+
+function coinTossGame() {
+  return {
+    initialState: 'initial',
+    isTerminal: s => s !== 'initial',
+    getTransitions: s => s !== 'initial' ? [] : [[0.5, 'win'], [0.5, 'loss']],
+    intrinsicDesire: s => s === 'win' ? 1.0 : 0.0,
+  };
+}
+
+function bestOfNGame(n) {
+  // State: [winsP1, winsP2], need ceil(n/2) to win
+  const target = Math.ceil(n / 2);
+  return {
+    initialState: [0, 0],
+    isTerminal: s => s[0] >= target || s[1] >= target,
+    getTransitions: s => {
+      if (s[0] >= target || s[1] >= target) return [];
+      return [[0.5, [s[0] + 1, s[1]]], [0.5, [s[0], s[1] + 1]]];
+    },
+    intrinsicDesire: s => s[0] >= target ? 1.0 : 0.0,
+  };
+}
+
+function hpGame(hp1, hp2) {
+  return {
+    initialState: [hp1, hp2],
+    isTerminal: s => s[0] <= 0 || s[1] <= 0,
+    getTransitions: s => {
+      if (s[0] <= 0 || s[1] <= 0) return [];
+      return [
+        [1/3, [s[0], s[1] - 1]],
+        [1/3, [s[0] - 1, s[1] - 1]],
+        [1/3, [s[0] - 1, s[1]]],
+      ];
+    },
+    intrinsicDesire: s => (s[0] > 0 && s[1] <= 0) ? 1.0 : 0.0,
+  };
+}
+
+function combatGame(maxHp, params) {
+  const { strikeDmg, heavyDmg, heavyHit, guardCounter, guardBlock, chipDmg } = params;
+
+  // Build action outcome table
+  // (a1, a2) → [(prob, (dhp1, dhp2)), ...]
+  const actions = {};
+  const set = (a1, a2, outcomes) => { actions[a1 * 3 + a2] = outcomes; };
+
+  set(0, 0, [[1.0, [-strikeDmg, -strikeDmg]]]);
+  set(0, 1, [[heavyHit, [-heavyDmg, -strikeDmg]], [1 - heavyHit, [0, -strikeDmg]]]);
+  set(0, 2, [[1.0, [-guardCounter, 0]]]);
+  set(1, 0, [[heavyHit, [-strikeDmg, -heavyDmg]], [1 - heavyHit, [-strikeDmg, 0]]]);
+  set(1, 1, [
+    [heavyHit * heavyHit, [-heavyDmg, -heavyDmg]],
+    [heavyHit * (1 - heavyHit), [-heavyDmg, 0]],
+    [(1 - heavyHit) * heavyHit, [0, -heavyDmg]],
+    [(1 - heavyHit) * (1 - heavyHit), [-chipDmg, -chipDmg]],
+  ]);
+  const reduced = Math.floor(heavyDmg * guardBlock);
+  set(1, 2, [[heavyHit, [0, -reduced]], [1 - heavyHit, [-guardCounter, 0]]]);
+  set(2, 0, [[1.0, [0, -guardCounter]]]);
+  set(2, 1, [[heavyHit, [-reduced, 0]], [1 - heavyHit, [0, -guardCounter]]]);
+  set(2, 2, [[1.0, [-chipDmg, -chipDmg]]]);
+
+  function getTransitionsForPolicy(state, policy) {
+    const [hp1, hp2] = state;
+    if (hp1 <= 0 || hp2 <= 0) return [];
+
+    const transitions = [];
+    const oppProbs = [1/3, 1/3, 1/3]; // opponent always random
+
+    for (let a1 = 0; a1 < 3; a1++) {
+      const p1prob = policy[a1];
+      if (p1prob < 1e-10) continue;
+      for (let a2 = 0; a2 < 3; a2++) {
+        const p2prob = oppProbs[a2];
+        if (p2prob < 1e-10) continue;
+        const key = a1 * 3 + a2;
+        for (const [oprob, [dhp1, dhp2]] of actions[key]) {
+          const nh1 = Math.max(0, Math.min(maxHp, hp1 + dhp1));
+          const nh2 = Math.max(0, Math.min(maxHp, hp2 + dhp2));
+          transitions.push([p1prob * p2prob * oprob, [nh1, nh2]]);
+        }
+      }
+    }
+
+    // Merge duplicate states
+    return mergeTransitions(transitions);
+  }
+
+  return {
+    maxHp,
+    nActions: 3,
+    actionNames: ['Strike', 'Heavy', 'Guard'],
+    getTransitionsForPolicy,
+    isTerminal: s => s[0] <= 0 || s[1] <= 0,
+    intrinsicDesire: s => (s[0] > 0 && s[1] <= 0) ? 1.0 : 0.0,
+    initialState: [maxHp, maxHp],
+  };
+}
+
+function mergeTransitions(transitions) {
+  const map = new Map();
+  for (const [p, s] of transitions) {
+    const k = JSON.stringify(s);
+    map.set(k, (map.get(k) || 0) + p);
+  }
+  const result = [];
+  let total = 0;
+  for (const [k, p] of map) {
+    result.push([p, JSON.parse(k)]);
+    total += p;
+  }
+  // Normalize
+  if (Math.abs(total - 1.0) > 0.001) {
+    for (let i = 0; i < result.length; i++) result[i][0] /= total;
+  }
+  return result;
+}
+
+
+// ═══════════════════════════════════════════════
+// AGENCY METRICS (PI, CPG)
+// ═══════════════════════════════════════════════
+
+function computeGDSForPolicy(combatModel, policy, nestLevel) {
+  const game = {
+    initialState: combatModel.initialState,
+    isTerminal: combatModel.isTerminal,
+    getTransitions: s => combatModel.getTransitionsForPolicy(s, policy),
+    intrinsicDesire: combatModel.intrinsicDesire,
+  };
+  return toaAnalyze({ ...game, nestLevel });
+}
+
+function computePolicyImpact(combatModel, nestLevel) {
+  const gdsValues = [];
+  for (let a = 0; a < combatModel.nActions; a++) {
+    const policy = [0, 0, 0];
+    policy[a] = 1.0;
+    const result = computeGDSForPolicy(combatModel, policy, nestLevel);
+    gdsValues.push({ action: a, gds: result.gds, name: combatModel.actionNames[a] });
+  }
+
+  // Also random
+  const rndResult = computeGDSForPolicy(combatModel, [1/3, 1/3, 1/3], nestLevel);
+  gdsValues.push({ action: -1, gds: rndResult.gds, name: 'Random' });
+
+  const gdsList = gdsValues.map(v => v.gds);
+  const pi = Math.max(...gdsList) - Math.min(...gdsList);
+  return { pi, gdsValues };
+}
+
+function computeCPG(combatModel, nestLevel, resolution = 10) {
+  const n = combatModel.nActions;
+  const results = [];
+
+  // Grid search over mixed strategies
+  for (let i = 0; i <= resolution; i++) {
+    for (let j = 0; j <= resolution - i; j++) {
+      const k = resolution - i - j;
+      const policy = [i / resolution, j / resolution, k / resolution];
+
+      const result = computeGDSForPolicy(combatModel, policy, nestLevel);
+
+      // Get d_global at initial state — approximate via another analysis with nest=1
+      // Actually we need the win probability. Let's compute it separately.
+      // For CPG, we need D₀ (win probability from initial state under this policy)
+      const wpResult = toaAnalyze({
+        initialState: combatModel.initialState,
+        isTerminal: combatModel.isTerminal,
+        getTransitions: s => combatModel.getTransitionsForPolicy(s, policy),
+        intrinsicDesire: combatModel.intrinsicDesire,
+        nestLevel: 1,
+      });
+
+      // D₀ is the propagated desire at initial state — we need it from the analysis
+      // Since we can't easily extract it from our current API, let's compute it directly
+      const d0 = computeWinProb(combatModel, policy);
+
+      results.push({ gds: result.gds, d0, policy: [...policy] });
+    }
+  }
+
+  // Fun-optimal: highest GDS
+  results.sort((a, b) => b.gds - a.gds);
+  const funOpt = results[0];
+
+  // Win-optimal: highest D₀
+  results.sort((a, b) => b.d0 - a.d0);
+  const winOpt = results[0];
+
+  const cpg = Math.abs(funOpt.d0 - winOpt.d0);
+  return { cpg, funOptimal: funOpt, winOptimal: winOpt };
+}
+
+function computeWinProb(combatModel, policy) {
+  // Simple DP: propagate win probability backward
+  const visited = new Map();
+
+  function dp(state) {
+    if (combatModel.isTerminal(state)) {
+      return combatModel.intrinsicDesire(state);
+    }
+    const k = JSON.stringify(state);
+    if (visited.has(k)) return visited.get(k);
+
+    // Mark visiting to avoid infinite loops (shouldn't happen in acyclic games)
+    visited.set(k, 0);
+
+    const trans = combatModel.getTransitionsForPolicy(state, policy);
+    let wp = 0;
+    for (const [prob, next] of trans) {
+      wp += prob * dp(next);
+    }
+    visited.set(k, wp);
+    return wp;
+  }
+
+  return dp(combatModel.initialState);
+}
+
+
+// ═══════════════════════════════════════════════
+// DERIVED METRICS
+// ═══════════════════════════════════════════════
+
+function weightedGDS(components, alpha) {
+  let total = 0;
+  for (let k = 0; k < components.length; k++) {
+    total += Math.pow(alpha, k) * components[k];
+  }
+  return total;
+}
+
+function effectiveNestLevel(components, threshold = 0.01) {
+  const total = components.reduce((a, b) => a + b, 0);
+  if (total < 1e-10) return 0;
+  let cumulative = 0;
+  for (let k = 0; k < components.length; k++) {
+    cumulative += components[k];
+    if (cumulative / total >= 1 - threshold) return k + 1;
+  }
+  return components.length;
+}
+
+function classifyProfile(components) {
+  const ratios = [];
+  for (let k = 1; k < Math.min(5, components.length); k++) {
+    if (components[k - 1] > 1e-10) {
+      ratios.push(components[k] / components[k - 1]);
+    }
+  }
+  const avg = ratios.length ? ratios.reduce((a, b) => a + b, 0) / ratios.length : 0;
+  if (avg > 1.2) return 'SNOWBALL';
+  if (avg > 0.8) return 'BALANCED';
+  if (avg > 0.3) return 'DECAYING';
+  return 'SHALLOW';
+}
+
+
+// ═══════════════════════════════════════════════
+// UI
+// ═══════════════════════════════════════════════
+
+const GAME_CONFIGS = {
+  coin: {
+    description: 'Single coin flip. The theoretical minimum game — one moment of pure uncertainty.',
+    params: [],
+    hasAgency: false,
+  },
+  bestofn: {
+    description: 'Best-of-N coin flips. As N increases, anticipation builds across rounds.',
+    params: [
+      { id: 'rounds', label: 'Rounds (N)', min: 1, max: 15, value: 5, step: 2 },
+    ],
+    hasAgency: false,
+  },
+  hp: {
+    description: 'Two players trade hits. Each turn: one of three equally likely outcomes (P1 hits, both hit, P2 hits).',
+    params: [
+      { id: 'hp', label: 'HP per player', min: 2, max: 8, value: 5, step: 1 },
+    ],
+    hasAgency: false,
+  },
+  combat: {
+    description: 'Tactical combat with Strike/Heavy/Guard. The only model with player choices — enables PI and CPG analysis.',
+    params: [
+      { id: 'maxHp', label: 'HP per player', min: 3, max: 7, value: 5, step: 1 },
+      { id: 'heavyDmg', label: 'Heavy Damage', min: 2, max: 5, value: 2, step: 1 },
+      { id: 'heavyHit', label: 'Heavy Hit Chance', min: 0.3, max: 0.9, value: 0.5, step: 0.1, decimals: 1 },
+      { id: 'guardCounter', label: 'Guard Counter Damage', min: 1, max: 3, value: 1, step: 1 },
+      { id: 'guardBlock', label: 'Guard Block Ratio', min: 0.3, max: 0.8, value: 0.5, step: 0.1, decimals: 1 },
+    ],
+    hasAgency: true,
+  },
+};
+
+let computeTimeout = null;
+
+function updateLabel(sliderId, labelId, decimals = 0) {
+  const v = document.getElementById(sliderId).value;
+  document.getElementById(labelId).textContent = Number(v).toFixed(decimals);
+}
+
+function onGameChange() {
+  const game = document.getElementById('gameSelect').value;
+  const cfg = GAME_CONFIGS[game];
+
+  document.getElementById('gameDescription').textContent = cfg.description;
+
+  // Build params UI
+  const container = document.getElementById('paramsContainer');
+  container.innerHTML = '';
+  for (const p of cfg.params) {
+    const dec = p.decimals || 0;
+    const div = document.createElement('div');
+    div.className = 'control-group';
+    div.innerHTML = `
+      <div class="control-label"><span>${p.label}</span><span id="param_${p.id}_val">${Number(p.value).toFixed(dec)}</span></div>
+      <input type="range" id="param_${p.id}" min="${p.min}" max="${p.max}" value="${p.value}" step="${p.step}"
+        oninput="document.getElementById('param_${p.id}_val').textContent = Number(this.value).toFixed(${dec}); scheduleCompute()">
+    `;
+    container.appendChild(div);
+  }
+
+  document.getElementById('strategyPanel').style.display = cfg.hasAgency ? '' : 'none';
+
+  // Show/hide CFS, PI, CPG cards based on agency
+  const piCard = document.getElementById('mPI').parentElement;
+  const cpgCard = document.getElementById('mCPG').parentElement;
+  const cfsCard = document.getElementById('mCFS').parentElement;
+  piCard.style.display = cfg.hasAgency ? '' : 'none';
+  cpgCard.style.display = cfg.hasAgency ? '' : 'none';
+  cfsCard.style.display = cfg.hasAgency ? '' : 'none';
+
+  scheduleCompute();
+}
+
+function scheduleCompute() {
+  if (computeTimeout) clearTimeout(computeTimeout);
+  computeTimeout = setTimeout(runCompute, 150);
+}
+
+function getParam(id, fallback) {
+  const el = document.getElementById('param_' + id);
+  return el ? Number(el.value) : fallback;
+}
+
+function runCompute() {
+  const gameType = document.getElementById('gameSelect').value;
+  const nestLevel = Number(document.getElementById('nestLevel').value);
+  const alpha = Number(document.getElementById('alpha').value);
+
+  const t0 = performance.now();
+
+  let result, agencyResult = null;
+  let game;
+
+  switch (gameType) {
+    case 'coin':
+      game = coinTossGame();
+      result = toaAnalyze({ ...game, nestLevel });
+      break;
+    case 'bestofn': {
+      const n = getParam('rounds', 5);
+      game = bestOfNGame(n);
+      result = toaAnalyze({ ...game, nestLevel });
+      break;
+    }
+    case 'hp': {
+      const hp = getParam('hp', 5);
+      game = hpGame(hp, hp);
+      result = toaAnalyze({ ...game, nestLevel });
+      break;
+    }
+    case 'combat': {
+      const maxHp = getParam('maxHp', 5);
+      const cm = combatGame(maxHp, {
+        strikeDmg: 1,
+        heavyDmg: getParam('heavyDmg', 2),
+        heavyHit: getParam('heavyHit', 0.5),
+        guardCounter: getParam('guardCounter', 1),
+        guardBlock: getParam('guardBlock', 0.5),
+        chipDmg: 1,
+      });
+      // GDS under random policy
+      result = computeGDSForPolicy(cm, [1/3, 1/3, 1/3], nestLevel);
+
+      // Agency metrics
+      const { pi, gdsValues } = computePolicyImpact(cm, nestLevel);
+      const { cpg, funOptimal, winOptimal } = computeCPG(cm, nestLevel, 10);
+      agencyResult = { pi, gdsValues, cpg, funOptimal, winOptimal };
+      break;
+    }
+  }
+
+  const elapsed = performance.now() - t0;
+  displayResults(result, agencyResult, alpha, elapsed);
+}
+
+function displayResults(result, agency, alpha, elapsed) {
+  const comp = result.gdsComponents;
+  const gds = result.gds;
+  const wgds = weightedGDS(comp, alpha);
+  const enl = effectiveNestLevel(comp);
+  const profile = classifyProfile(comp);
+
+  document.getElementById('mGDS').textContent = gds.toFixed(3);
+  document.getElementById('mWGDS').textContent = wgds.toFixed(3);
+  document.getElementById('mENL').textContent = enl;
+  document.getElementById('computeTime').textContent = `${elapsed.toFixed(0)}ms · ${result.stateCount} states`;
+
+  const badge = document.getElementById('profileBadge');
+  badge.textContent = profile;
+  badge.className = `badge ${profile}`;
+
+  if (agency) {
+    const piRatio = gds > 1e-10 ? agency.pi / gds : 0;
+    const cpgNorm = Math.min(agency.cpg, 1.0);
+    const cfs = wgds * (1 + piRatio) * (1 - cpgNorm);
+
+    document.getElementById('mPI').textContent = agency.pi.toFixed(3);
+    document.getElementById('mCPG').textContent = agency.cpg.toFixed(3);
+    document.getElementById('mCFS').textContent = cfs.toFixed(3);
+
+    // Strategy panel
+    const sc = document.getElementById('strategyContent');
+    let html = '<div style="margin-bottom: 8px; font-size: 13px;">';
+    html += '<strong>GDS by pure strategy:</strong></div>';
+    const maxGDS = Math.max(...agency.gdsValues.map(v => v.gds));
+    for (const v of agency.gdsValues) {
+      const pct = maxGDS > 0 ? (v.gds / maxGDS * 100) : 0;
+      const color = v.gds === maxGDS ? 'var(--green)' : 'var(--text2)';
+      html += `<div class="strategy-row">
+        <span class="strategy-name">${v.name}</span>
+        <div class="strategy-bar" style="background: ${color}; width: ${pct}%;"></div>
+        <span style="font-family: monospace; color: ${color};">${v.gds.toFixed(3)}</span>
+      </div>`;
+    }
+
+    html += '<div class="sep"></div>';
+    html += `<div style="font-size: 13px;">
+      <strong>Fun-optimal:</strong> [${agency.funOptimal.policy.map(p => p.toFixed(1)).join(', ')}] → GDS ${agency.funOptimal.gds.toFixed(3)}, Win ${(agency.funOptimal.d0 * 100).toFixed(1)}%<br>
+      <strong>Win-optimal:</strong> [${agency.winOptimal.policy.map(p => p.toFixed(1)).join(', ')}] → GDS ${agency.winOptimal.gds.toFixed(3)}, Win ${(agency.winOptimal.d0 * 100).toFixed(1)}%
+    </div>`;
+    sc.innerHTML = html;
+    document.getElementById('strategyPanel').style.display = '';
+  } else {
+    document.getElementById('mPI').textContent = '—';
+    document.getElementById('mCPG').textContent = '—';
+    document.getElementById('mCFS').textContent = '—';
+    document.getElementById('strategyPanel').style.display = 'none';
+  }
+
+  // Chart
+  drawChart(comp);
+
+  // Component list
+  const list = comp.map((c, i) => `A${i + 1}=${c.toFixed(4)}`).join('  ');
+  document.getElementById('componentList').textContent = list;
+
+  // Insight
+  generateInsight(gds, wgds, agency, profile, comp);
+}
+
+function drawChart(components) {
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+
+  const W = rect.width;
+  const H = rect.height;
+  const pad = { top: 10, right: 20, bottom: 30, left: 50 };
+  const cw = W - pad.left - pad.right;
+  const ch = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const maxVal = Math.max(...components, 0.01);
+  const barWidth = Math.min(cw / components.length * 0.7, 40);
+  const gap = cw / components.length;
+
+  // Grid lines
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + ch - (ch * i / 4);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((maxVal * i / 4).toFixed(3), pad.left - 6, y + 3);
+  }
+
+  // Bars
+  const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch);
+  gradient.addColorStop(0, '#58a6ff');
+  gradient.addColorStop(1, '#1f6feb');
+
+  for (let i = 0; i < components.length; i++) {
+    const x = pad.left + gap * i + (gap - barWidth) / 2;
+    const barH = (components[i] / maxVal) * ch;
+    const y = pad.top + ch - barH;
+
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    const r = 3;
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + barWidth - r, y);
+    ctx.arcTo(x + barWidth, y, x + barWidth, y + r, r);
+    ctx.lineTo(x + barWidth, y + barH);
+    ctx.lineTo(x, y + barH);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.fill();
+
+    // Label
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`A${i + 1}`, x + barWidth / 2, H - pad.bottom + 15);
+  }
+}
+
+function generateInsight(gds, wgds, agency, profile, comp) {
+  const el = document.getElementById('insightContent');
+  let insights = [];
+
+  if (gds < 0.1) {
+    insights.push('Very low tension — the outcome feels predetermined. Consider adding more uncertainty or longer games.');
+  } else if (gds < 0.3) {
+    insights.push('Moderate tension. The game has some suspense but resolves quickly.');
+  } else if (gds < 0.6) {
+    insights.push('Good tension level — comparable to well-designed competitive games.');
+  } else {
+    insights.push('High tension — the game creates strong suspense through deep uncertainty structures.');
+  }
+
+  if (profile === 'SNOWBALL') {
+    insights.push('<strong>Snowball profile:</strong> Later rounds create MORE tension than earlier ones. This can feel like escalating drama.');
+  } else if (profile === 'DECAYING') {
+    insights.push('<strong>Decaying profile:</strong> Most tension is front-loaded. Consider adding mechanics that keep later rounds interesting.');
+  } else if (profile === 'SHALLOW') {
+    insights.push('<strong>Shallow profile:</strong> Nearly all tension comes from A₁ (immediate outcomes). The game lacks deeper anticipation layers.');
+  }
+
+  if (agency) {
+    if (agency.cpg > 0.3) {
+      insights.push(`<strong>High CPG (${agency.cpg.toFixed(2)}):</strong> The most fun strategy loses. Players must choose between excitement and winning. Try increasing Heavy\'s expected value to align fun with winning.`);
+    } else if (agency.cpg < 0.05) {
+      insights.push(`<strong>Near-zero CPG:</strong> Fun and winning are aligned — the exciting strategy is also the best strategy. This is the ideal design target.`);
+    }
+
+    if (agency.pi < 0.05) {
+      insights.push(`<strong>Low PI (${agency.pi.toFixed(3)}):</strong> Player choices barely affect the experience. Consider making actions more differentiated.`);
+    } else if (agency.pi > 0.15) {
+      insights.push(`<strong>Strong agency (PI=${agency.pi.toFixed(3)}):</strong> Player choices meaningfully shape their experience.`);
+    }
+  }
+
+  el.innerHTML = insights.join('<br><br>');
+}
+
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+onGameChange();
+</script>
+</body>
+</html>
