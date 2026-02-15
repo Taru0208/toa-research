@@ -1,0 +1,1138 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Paradox-Free Combat</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #080a12;
+  color: #c8ccd4;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 16px 0 4px;
+  color: #e0e4ec;
+  letter-spacing: -0.5px;
+}
+.subtitle {
+  font-size: 13px;
+  color: #607090;
+  margin-bottom: 12px;
+}
+#gameContainer {
+  position: relative;
+  width: 800px;
+  max-width: 100vw;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+#controls {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 800px;
+}
+.btn {
+  background: linear-gradient(180deg, #1a1e2e 0%, #121520 100%);
+  border: 1px solid #2a3050;
+  color: #c8ccd4;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-width: 140px;
+  text-align: center;
+}
+.btn:hover:not(:disabled) {
+  border-color: #4a5580;
+  background: linear-gradient(180deg, #222840 0%, #181c2c 100%);
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: 0.35; cursor: default; }
+.btn-strike { border-color: #3060c0; }
+.btn-strike:hover:not(:disabled) { border-color: #5080e0; box-shadow: 0 0 15px rgba(48,96,192,0.3); }
+.btn-heavy { border-color: #c06030; }
+.btn-heavy:hover:not(:disabled) { border-color: #e08050; box-shadow: 0 0 15px rgba(192,96,48,0.3); }
+.btn-guard { border-color: #30c060; }
+.btn-guard:hover:not(:disabled) { border-color: #50e080; box-shadow: 0 0 15px rgba(48,192,96,0.3); }
+.btn-play {
+  background: linear-gradient(180deg, #1a3060 0%, #102040 100%);
+  border-color: #3070c0;
+  font-size: 18px;
+  padding: 14px 40px;
+  min-width: 160px;
+}
+.btn-play:hover:not(:disabled) {
+  border-color: #5090e0;
+  box-shadow: 0 0 20px rgba(48,112,192,0.4);
+}
+.btn-sub {
+  font-size: 11px;
+  color: #7080a0;
+  display: block;
+  margin-top: 2px;
+  font-weight: 400;
+}
+#log {
+  width: 100%;
+  max-width: 800px;
+  height: 60px;
+  overflow-y: auto;
+  padding: 6px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #8090a8;
+  background: #0c0e18;
+  border-radius: 6px;
+  border: 1px solid #1a1e2e;
+}
+#log::-webkit-scrollbar { width: 4px; }
+#log::-webkit-scrollbar-track { background: transparent; }
+#log::-webkit-scrollbar-thumb { background: #2a3050; border-radius: 2px; }
+.log-player { color: #6090d0; }
+.log-enemy { color: #d06060; }
+.log-heavy { color: #e09050; font-weight: 600; }
+.log-guard { color: #50c070; }
+.log-miss { color: #606880; font-style: italic; }
+.log-counter { color: #c060c0; }
+#stats {
+  display: flex;
+  gap: 20px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #506080;
+}
+.stat-val { color: #8098c0; font-weight: 600; }
+#insight {
+  max-width: 800px;
+  width: 100%;
+  margin: 12px 0;
+  padding: 14px 18px;
+  background: #0c0e18;
+  border: 1px solid #1a2040;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #8090a8;
+}
+#insight h3 {
+  font-size: 14px;
+  color: #a0b0d0;
+  margin-bottom: 6px;
+}
+#insight .highlight {
+  color: #e09050;
+  font-weight: 600;
+}
+#insight .good { color: #50c070; }
+#insight .metric {
+  display: inline-block;
+  background: #141828;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Consolas', 'SF Mono', monospace;
+  font-size: 12px;
+  color: #a0b0d0;
+}
+.insight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+.insight-col h4 {
+  font-size: 12px;
+  color: #607090;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+<h1>Paradox-Free Combat</h1>
+<p class="subtitle">A game where the fun strategy IS the winning strategy</p>
+<div id="gameContainer">
+  <canvas id="canvas" width="800" height="420"></canvas>
+  <div id="controls"></div>
+  <div id="log"></div>
+  <div id="stats">
+    <span>Wins: <span class="stat-val" id="statWins">0</span></span>
+    <span>Losses: <span class="stat-val" id="statLosses">0</span></span>
+    <span>Streak: <span class="stat-val" id="statStreak">0</span></span>
+    <span>Heavy rate: <span class="stat-val" id="statHeavy">-</span></span>
+  </div>
+</div>
+<div id="insight">
+  <h3>The Choice Paradox — Eliminated</h3>
+  <div class="insight-grid">
+    <div class="insight-col">
+      <h4>Typical Game</h4>
+      The safest (winning) strategy is to <span class="metric">Guard</span> — but Guard is boring.<br>
+      The exciting strategy is <span class="metric">Heavy</span> — high risk, high reward.<br>
+      <strong>Fun and winning pull in opposite directions.</strong>
+      <span class="metric">CPG = 0.346</span>
+    </div>
+    <div class="insight-col">
+      <h4>This Game</h4>
+      Heavy does <span class="highlight">3 damage at 70% hit</span> — devastating and reliable.<br>
+      Guard counters missed attacks for <span class="highlight">2 damage</span>.<br>
+      <span class="good">The exciting strategy IS the winning strategy.</span>
+      <span class="metric">CPG = 0.000</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  PARADOX-FREE COMBAT — CPG-Optimized Turn Battle
+//  Parameters: HP=5, HeavyDmg=3, HeavyHit=70%, GuardCounter=2, GuardBlock=70%
+// ============================================================
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = 800, H = 420;
+const controlsEl = document.getElementById('controls');
+const logEl = document.getElementById('log');
+
+// --- Config (CPG-optimized) ---
+const MAX_HP = 5;
+const HEAVY_DMG = 3;
+const HEAVY_HIT = 0.70;
+const GUARD_COUNTER_DMG = 2;
+const GUARD_BLOCK_HEAVY = 0.70;
+const STRIKE_DMG = 1;
+
+// --- Audio ---
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function playSound(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  const g = audioCtx.createGain();
+  g.connect(audioCtx.destination);
+  const o = audioCtx.createOscillator();
+  o.connect(g);
+
+  switch(type) {
+    case 'hit':
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(200, now);
+      o.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      o.start(now); o.stop(now + 0.2);
+      break;
+    case 'heavy':
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(150, now);
+      o.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+      g.gain.setValueAtTime(0.2, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      o.start(now); o.stop(now + 0.35);
+      const o2 = audioCtx.createOscillator();
+      const g2 = audioCtx.createGain();
+      o2.connect(g2); g2.connect(audioCtx.destination);
+      o2.type = 'sine'; o2.frequency.setValueAtTime(60, now);
+      g2.gain.setValueAtTime(0.2, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+      o2.start(now); o2.stop(now + 0.4);
+      break;
+    case 'miss':
+      o.type = 'sine'; o.frequency.setValueAtTime(300, now);
+      o.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+      g.gain.setValueAtTime(0.08, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+      o.start(now); o.stop(now + 0.25);
+      break;
+    case 'guard':
+      o.type = 'triangle'; o.frequency.setValueAtTime(500, now);
+      o.frequency.exponentialRampToValueAtTime(700, now + 0.1);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      o.start(now); o.stop(now + 0.15);
+      break;
+    case 'counter':
+      o.type = 'square'; o.frequency.setValueAtTime(150, now);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.25);
+      g.gain.setValueAtTime(0.15, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      o.start(now); o.stop(now + 0.3);
+      break;
+    case 'block':
+      o.type = 'triangle'; o.frequency.setValueAtTime(600, now);
+      o.frequency.exponentialRampToValueAtTime(300, now + 0.15);
+      g.gain.setValueAtTime(0.1, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      o.start(now); o.stop(now + 0.2);
+      break;
+    case 'win':
+      o.type = 'triangle';
+      [400,500,600,800].forEach((f,i) => {
+        o.frequency.setValueAtTime(f, now + i * 0.12);
+      });
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.setValueAtTime(0.12, now + 0.45);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      o.start(now); o.stop(now + 0.7);
+      break;
+    case 'lose':
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(250, now);
+      o.frequency.exponentialRampToValueAtTime(60, now + 0.6);
+      g.gain.setValueAtTime(0.12, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      o.start(now); o.stop(now + 0.7);
+      break;
+    case 'select':
+      o.type = 'sine'; o.frequency.setValueAtTime(600, now);
+      o.frequency.exponentialRampToValueAtTime(800, now + 0.06);
+      g.gain.setValueAtTime(0.06, now);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      o.start(now); o.stop(now + 0.08);
+      break;
+  }
+}
+
+// --- Particles ---
+const particles = [];
+function spawnParticles(x, y, color, count, speed, life, size) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = (Math.random() * 0.6 + 0.4) * speed;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd - Math.random() * 1.5,
+      life: life * (0.7 + Math.random() * 0.6),
+      maxLife: life * (0.7 + Math.random() * 0.6),
+      color, size: size * (0.5 + Math.random() * 0.5),
+      gravity: 0.08
+    });
+  }
+}
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.vy += p.gravity * dt;
+    p.life -= dt;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+function drawParticles() {
+  for (const p of particles) {
+    const alpha = Math.max(0, p.life / p.maxLife);
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+// --- Floating Text ---
+const floatingTexts = [];
+function spawnFloatingText(x, y, text, color, size) {
+  floatingTexts.push({ x, y, text, color, size: size || 22, life: 55, maxLife: 55, vy: -1.5 });
+}
+function updateFloatingTexts(dt) {
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const t = floatingTexts[i];
+    t.y += t.vy * dt; t.vy *= 0.98; t.life -= dt;
+    if (t.life <= 0) floatingTexts.splice(i, 1);
+  }
+}
+function drawFloatingTexts() {
+  for (const t of floatingTexts) {
+    const alpha = Math.max(0, t.life / t.maxLife);
+    const scale = 1 + (1 - alpha) * 0.3;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `bold ${Math.round(t.size * scale)}px 'Segoe UI', system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#000';
+    ctx.fillText(t.text, t.x + 2, t.y + 2);
+    ctx.fillStyle = t.color;
+    ctx.fillText(t.text, t.x, t.y);
+    ctx.restore();
+  }
+}
+
+// --- Screen Shake ---
+let shakeAmount = 0, shakeDuration = 0;
+function triggerShake(a, d) { shakeAmount = a; shakeDuration = d; }
+function getShakeOffset() {
+  if (shakeDuration <= 0) return { x: 0, y: 0 };
+  const i = shakeDuration / 20 * shakeAmount;
+  return { x: (Math.random() - 0.5) * i * 2, y: (Math.random() - 0.5) * i * 2 };
+}
+
+// --- Fighter Drawing ---
+function drawFighter(x, y, color, hp, maxHp, isGuarding, facingLeft, hitFlash, name) {
+  ctx.save();
+  const flashColor = hitFlash > 0 ? `rgba(255,255,255,${hitFlash * 0.6})` : null;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(x, y + 48, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Guard shield
+  if (isGuarding) {
+    ctx.strokeStyle = '#50e080';
+    ctx.lineWidth = 2.5;
+    ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.006) * 0.15;
+    ctx.beginPath();
+    ctx.ellipse(x, y - 10, 35, 50, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  const dir = facingLeft ? -1 : 1;
+
+  // Legs
+  ctx.strokeStyle = flashColor || color;
+  ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - 6, y + 20); ctx.lineTo(x - 10, y + 45);
+  ctx.moveTo(x + 6, y + 20); ctx.lineTo(x + 10, y + 45);
+  ctx.stroke();
+
+  // Body
+  ctx.fillStyle = flashColor || color;
+  ctx.beginPath();
+  ctx.roundRect(x - 12, y - 15, 24, 38, 4);
+  ctx.fill();
+
+  // Arms
+  ctx.strokeStyle = flashColor || color;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(x - 12 * dir, y - 5); ctx.lineTo(x - 22 * dir, y + 10);
+  ctx.moveTo(x + 12 * dir, y - 5); ctx.lineTo(x + 22 * dir, y + 5);
+  ctx.stroke();
+
+  // Head
+  ctx.fillStyle = flashColor || color;
+  ctx.beginPath();
+  ctx.arc(x, y - 28, 14, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  const eyeX = facingLeft ? -4 : 4;
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(x + eyeX - 3, y - 30, 3, 0, Math.PI * 2);
+  ctx.arc(x + eyeX + 5, y - 30, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(x + eyeX - 3 + (facingLeft ? -0.5 : 0.5), y - 30, 1.5, 0, Math.PI * 2);
+  ctx.arc(x + eyeX + 5 + (facingLeft ? -0.5 : 0.5), y - 30, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // HP Bar
+  const barW = 60, barH = 7;
+  const barX = x - barW / 2, barY = y - 55;
+  ctx.fillStyle = '#1a1020';
+  ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+  const hpRatio = Math.max(0, hp / maxHp);
+  const hpColor = hpRatio > 0.5 ? '#40c070' : hpRatio > 0.25 ? '#d0a030' : '#d04040';
+  ctx.fillStyle = hpColor;
+  ctx.fillRect(barX, barY, barW * hpRatio, barH);
+
+  // Name
+  ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#506080';
+  ctx.fillText(name, x, barY - 6);
+
+  // HP text
+  ctx.font = '11px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#8090a8';
+  ctx.fillText(`${hp}/${maxHp}`, x, barY + barH + 14);
+
+  ctx.restore();
+}
+
+// --- Fighter Anim ---
+class FighterAnim {
+  constructor(baseX, baseY) {
+    this.baseX = baseX; this.baseY = baseY;
+    this.x = baseX; this.y = baseY;
+    this.hitFlash = 0;
+    this.bobPhase = Math.random() * Math.PI * 2;
+    this.attacking = false; this.attackX = 0; this.attackPhase = 0;
+  }
+  update(dt) {
+    this.bobPhase += 0.03 * dt;
+    this.y = this.baseY + Math.sin(this.bobPhase) * 2;
+    if (this.hitFlash > 0) this.hitFlash -= 0.03 * dt;
+    if (this.attacking) {
+      this.attackPhase += 0.06 * dt;
+      if (this.attackPhase < 1) {
+        this.x = this.baseX + this.attackX * Math.sin(this.attackPhase * Math.PI);
+      } else {
+        this.attacking = false; this.attackPhase = 0; this.x = this.baseX;
+      }
+    }
+  }
+  startAttack(targetX) {
+    this.attacking = true; this.attackPhase = 0;
+    this.attackX = (targetX - this.baseX) * 0.4;
+  }
+  flash() { this.hitFlash = 1; }
+}
+
+// --- Win Probability (precomputed via DP) ---
+// Some action pairs (Guard vs Guard, Strike vs Guard, etc.) return to the same state.
+// We handle this by computing: P(s) = selfLoopProb * P(s) + nonLoopSum
+// => P(s) = nonLoopSum / (1 - selfLoopProb)
+const winProb = {};
+function computeWinProb(phP, ehP) {
+  const key = `${phP},${ehP}`;
+  if (winProb[key] !== undefined) return winProb[key];
+
+  if (phP <= 0 && ehP <= 0) { winProb[key] = 0.5; return 0.5; }
+  if (phP <= 0) { winProb[key] = 0; return 0; }
+  if (ehP <= 0) { winProb[key] = 1; return 1; }
+
+  // Mark as being computed to avoid infinite recursion
+  winProb[key] = 0.5; // placeholder
+
+  const hh = HEAVY_HIT;
+  const gb = GUARD_BLOCK_HEAVY;
+
+  // Accumulate: weightedSum of P(other states) and selfLoopWeight
+  let nonLoopSum = 0;
+  let selfLoopWeight = 0;
+
+  // 9 equally weighted action pairs (1/9 each)
+
+  // 1. Strike vs Strike: both take 1 dmg
+  nonLoopSum += computeWinProb(phP - 1, ehP - 1);
+
+  // 2. Strike vs Heavy: E heavy hits(70%) → P takes 3; E misses(30%) → E takes 2 counter
+  nonLoopSum += hh * computeWinProb(phP - HEAVY_DMG, ehP) +
+                (1 - hh) * computeWinProb(phP, ehP - GUARD_COUNTER_DMG);
+
+  // 3. Strike vs Guard: P strike blocked → no change
+  selfLoopWeight += 1;
+
+  // 4. Heavy vs Strike: P heavy hits(70%) → E takes 3; P misses(30%) → P takes 2 counter
+  nonLoopSum += hh * computeWinProb(phP, ehP - HEAVY_DMG) +
+                (1 - hh) * computeWinProb(phP - GUARD_COUNTER_DMG, ehP);
+
+  // 5. Heavy vs Heavy: both attack
+  nonLoopSum += hh * hh * computeWinProb(phP - HEAVY_DMG, ehP - HEAVY_DMG) +
+                hh * (1-hh) * computeWinProb(phP, ehP - HEAVY_DMG) +
+                (1-hh) * hh * computeWinProb(phP - HEAVY_DMG, ehP);
+  selfLoopWeight += (1-hh) * (1-hh); // both miss → no change
+
+  // 6. Heavy vs Guard: E blocks(70%) → no change; E fails block(30%) → P heavy check
+  selfLoopWeight += gb; // blocked
+  nonLoopSum += (1 - gb) * (
+    hh * computeWinProb(phP, ehP - HEAVY_DMG) // hits through
+  );
+  selfLoopWeight += (1 - gb) * (1 - hh); // missed even through unblocked
+
+  // 7. Guard vs Strike: E strike blocked → no change
+  selfLoopWeight += 1;
+
+  // 8. Guard vs Heavy: P blocks(70%) → no change; P fails(30%) → E heavy check
+  selfLoopWeight += gb;
+  nonLoopSum += (1 - gb) * (
+    hh * computeWinProb(phP - HEAVY_DMG, ehP)
+  );
+  selfLoopWeight += (1 - gb) * (1 - hh);
+
+  // 9. Guard vs Guard: nothing
+  selfLoopWeight += 1;
+
+  // P(s) = (nonLoopSum/9) / (1 - selfLoopWeight/9) = nonLoopSum / (9 - selfLoopWeight)
+  const result = nonLoopSum / (9 - selfLoopWeight);
+  winProb[key] = result;
+  return result;
+}
+
+// Precompute (from terminal states upward)
+for (let total = 0; total <= MAX_HP * 2; total++) {
+  for (let p = 0; p <= Math.min(total, MAX_HP); p++) {
+    const e = total - p;
+    if (e >= 0 && e <= MAX_HP) {
+      // Reset placeholder so it gets properly computed
+      delete winProb[`${p},${e}`];
+      computeWinProb(p, e);
+    }
+  }
+}
+
+// --- Game State ---
+let gameState = 'title';
+let player = { hp: MAX_HP, guarding: false };
+let enemy = { hp: MAX_HP, guarding: false };
+let playerAnim, enemyAnim;
+let turnQueue = [];
+let currentAnim = null;
+let animTimer = 0;
+let canAct = false;
+let stats = { wins: 0, losses: 0, streak: 0, best: 0, heavyCount: 0, totalActions: 0 };
+let turnCount = 0;
+let titlePulse = 0;
+let winProbHistory = [];
+
+try {
+  const saved = localStorage.getItem('paradoxFree_stats');
+  if (saved) stats = JSON.parse(saved);
+} catch(e) {}
+function saveStats() {
+  try { localStorage.setItem('paradoxFree_stats', JSON.stringify(stats)); } catch(e) {}
+}
+
+function resetBattle() {
+  player = { hp: MAX_HP, guarding: false };
+  enemy = { hp: MAX_HP, guarding: false };
+  playerAnim = new FighterAnim(230, 240);
+  enemyAnim = new FighterAnim(570, 240);
+  turnQueue = []; currentAnim = null; animTimer = 0;
+  canAct = true; turnCount = 0;
+  logEl.innerHTML = '';
+  gameState = 'battle';
+  winProbHistory = [0.5]; // symmetric start
+  updateButtons();
+}
+
+function addLog(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// --- AI (plays mixed strategy, not optimal) ---
+function enemyDecide() {
+  // Roughly uniform with light adjustments
+  const w = { strike: 30, heavy: 40, guard: 30 };
+  if (enemy.hp <= 2) { w.heavy = 55; w.guard = 15; } // desperate
+  if (player.hp <= 2) { w.heavy = 50; w.strike = 30; } // go for kill
+  const total = w.strike + w.heavy + w.guard;
+  let r = Math.random() * total;
+  if (r < w.strike) return 'strike';
+  r -= w.strike;
+  if (r < w.heavy) return 'heavy';
+  return 'guard';
+}
+
+// --- Combat Resolution ---
+// Resolve one attacker's action against opponent's action
+// Returns { dmgToOpponent, dmgToSelf, events[] }
+function resolveOneAction(action, oppAction, isPlayer) {
+  const name = isPlayer ? 'You' : 'CPU';
+  const defName = isPlayer ? 'CPU' : 'You';
+  const events = [];
+  let dmgToOpp = 0, dmgToSelf = 0;
+
+  if (action === 'guard') {
+    events.push({ type: 'guard', isPlayer,
+      log: `<span class="log-guard">${name} raised guard.</span>` });
+    return { dmgToOpp, dmgToSelf, events };
+  }
+
+  if (action === 'strike') {
+    if (oppAction === 'guard') {
+      events.push({ type: 'blocked', isPlayer,
+        log: `<span class="log-miss">${name}'s strike was blocked.</span>` });
+    } else {
+      dmgToOpp = STRIKE_DMG;
+      events.push({ type: 'hit', isPlayer, dmg: STRIKE_DMG,
+        log: `<span class="log-player">${name} struck for ${STRIKE_DMG}.</span>` });
+    }
+    return { dmgToOpp, dmgToSelf, events };
+  }
+
+  if (action === 'heavy') {
+    // Against guard: blocked with probability GUARD_BLOCK_HEAVY
+    if (oppAction === 'guard' && Math.random() < GUARD_BLOCK_HEAVY) {
+      events.push({ type: 'blocked', isPlayer,
+        log: `<span class="log-guard">${defName} blocked the heavy attack!</span>` });
+      return { dmgToOpp, dmgToSelf, events };
+    }
+
+    // Hit check
+    if (Math.random() < HEAVY_HIT) {
+      dmgToOpp = HEAVY_DMG;
+      events.push({ type: 'heavy_hit', isPlayer, dmg: HEAVY_DMG,
+        log: `<span class="log-heavy">${name} lands a devastating heavy — ${HEAVY_DMG} damage!</span>` });
+    } else {
+      dmgToSelf = GUARD_COUNTER_DMG;
+      events.push({ type: 'miss', isPlayer,
+        log: `<span class="log-miss">${name}'s heavy attack missed!</span>` });
+      events.push({ type: 'counter', isPlayer: !isPlayer, dmg: GUARD_COUNTER_DMG,
+        log: `<span class="log-counter">${defName} countered for ${GUARD_COUNTER_DMG}!</span>` });
+    }
+    return { dmgToOpp, dmgToSelf, events };
+  }
+
+  return { dmgToOpp, dmgToSelf, events };
+}
+
+function resolveTurn(playerAction, enemyAction) {
+  turnCount++;
+  player.guarding = false;
+  enemy.guarding = false;
+
+  const pResult = resolveOneAction(playerAction, enemyAction, true);
+  const eResult = resolveOneAction(enemyAction, playerAction, false);
+
+  // Apply damage
+  enemy.hp = Math.max(0, enemy.hp - pResult.dmgToOpp);
+  player.hp = Math.max(0, player.hp - pResult.dmgToSelf);
+  player.hp = Math.max(0, player.hp - eResult.dmgToOpp);
+  enemy.hp = Math.max(0, enemy.hp - eResult.dmgToSelf);
+
+  if (playerAction === 'guard') player.guarding = true;
+  if (enemyAction === 'guard') enemy.guarding = true;
+
+  // Combine events (player first, then enemy)
+  const events = [...pResult.events, ...eResult.events];
+
+  // Track win probability
+  winProbHistory.push(computeWinProb(player.hp, enemy.hp));
+
+  // Check end
+  if (player.hp <= 0 || enemy.hp <= 0) {
+    if (player.hp <= 0 && enemy.hp <= 0) {
+      events.push({ type: 'draw', log: 'Draw!' });
+    } else if (enemy.hp <= 0) {
+      events.push({ type: 'win', log: '<span class="log-player">Victory!</span>' });
+    } else {
+      events.push({ type: 'lose', log: '<span class="log-enemy">Defeat!</span>' });
+    }
+  }
+
+  return events;
+}
+
+function executeTurn(playerAction) {
+  if (!canAct || gameState !== 'battle') return;
+  ensureAudio();
+  playSound('select');
+  canAct = false;
+
+  stats.totalActions++;
+  if (playerAction === 'heavy') stats.heavyCount++;
+  saveStats();
+
+  const eAction = enemyDecide();
+  const events = resolveTurn(playerAction, eAction);
+
+  // Handle negative return (self-damage from missed heavy)
+  // Already handled inside resolveTurn
+
+  turnQueue = events;
+  gameState = 'animating';
+  animTimer = 0;
+  processNextEvent();
+}
+
+function processNextEvent() {
+  if (turnQueue.length === 0) {
+    if (player.hp <= 0 || enemy.hp <= 0) {
+      gameState = 'gameover';
+      if (enemy.hp <= 0 && player.hp > 0) {
+        stats.wins++; stats.streak++;
+        if (stats.streak > stats.best) stats.best = stats.streak;
+        playSound('win');
+      } else if (player.hp <= 0 && enemy.hp > 0) {
+        stats.losses++; stats.streak = 0;
+        playSound('lose');
+      } else {
+        stats.streak = 0; // draw
+      }
+      saveStats();
+    } else {
+      gameState = 'battle';
+      canAct = true;
+    }
+    updateButtons();
+    return;
+  }
+
+  currentAnim = turnQueue.shift();
+  animTimer = 0;
+
+  addLog(currentAnim.log);
+
+  const pX = playerAnim.x, pY = playerAnim.y;
+  const eX = enemyAnim.x, eY = enemyAnim.y;
+
+  switch(currentAnim.type) {
+    case 'hit':
+      if (currentAnim.isPlayer) {
+        playerAnim.startAttack(eX);
+        setTimeout(() => {
+          enemyAnim.flash();
+          spawnParticles(eX, eY - 10, '#6090d0', 8, 3, 25, 3);
+          spawnFloatingText(eX, eY - 60, `-${STRIKE_DMG}`, '#6090d0');
+          playSound('hit');
+          triggerShake(3, 8);
+        }, 200);
+      } else {
+        enemyAnim.startAttack(pX);
+        setTimeout(() => {
+          playerAnim.flash();
+          spawnParticles(pX, pY - 10, '#d06060', 8, 3, 25, 3);
+          spawnFloatingText(pX, pY - 60, `-${STRIKE_DMG}`, '#d06060');
+          playSound('hit');
+          triggerShake(3, 8);
+        }, 200);
+      }
+      setTimeout(() => processNextEvent(), 500);
+      break;
+
+    case 'heavy_hit':
+      if (currentAnim.isPlayer) {
+        playerAnim.startAttack(eX);
+        setTimeout(() => {
+          enemyAnim.flash();
+          spawnParticles(eX, eY - 10, '#e09050', 18, 5, 35, 4);
+          spawnFloatingText(eX, eY - 60, `-${HEAVY_DMG}`, '#e09050', 28);
+          playSound('heavy');
+          triggerShake(6, 15);
+        }, 200);
+      } else {
+        enemyAnim.startAttack(pX);
+        setTimeout(() => {
+          playerAnim.flash();
+          spawnParticles(pX, pY - 10, '#e09050', 18, 5, 35, 4);
+          spawnFloatingText(pX, pY - 60, `-${HEAVY_DMG}`, '#e09050', 28);
+          playSound('heavy');
+          triggerShake(6, 15);
+        }, 200);
+      }
+      setTimeout(() => processNextEvent(), 600);
+      break;
+
+    case 'miss':
+      playSound('miss');
+      setTimeout(() => processNextEvent(), 300);
+      break;
+
+    case 'counter':
+      if (currentAnim.isPlayer) {
+        spawnParticles(eX, eY - 10, '#c060c0', 12, 4, 30, 3);
+        spawnFloatingText(eX, eY - 60, `-${GUARD_COUNTER_DMG}`, '#c060c0');
+        enemyAnim.flash();
+        playSound('counter');
+        triggerShake(4, 10);
+      } else {
+        spawnParticles(pX, pY - 10, '#c060c0', 12, 4, 30, 3);
+        spawnFloatingText(pX, pY - 60, `-${GUARD_COUNTER_DMG}`, '#c060c0');
+        playerAnim.flash();
+        playSound('counter');
+        triggerShake(4, 10);
+      }
+      setTimeout(() => processNextEvent(), 500);
+      break;
+
+    case 'blocked':
+      playSound('block');
+      const bX = currentAnim.isPlayer ? eX : pX;
+      const bY = currentAnim.isPlayer ? eY : pY;
+      spawnParticles(bX, bY - 10, '#50e080', 6, 2, 20, 2);
+      spawnFloatingText(bX, bY - 60, 'BLOCKED', '#50e080', 18);
+      setTimeout(() => processNextEvent(), 400);
+      break;
+
+    case 'guard':
+      playSound('guard');
+      setTimeout(() => processNextEvent(), 250);
+      break;
+
+    case 'win':
+    case 'lose':
+    case 'draw':
+      setTimeout(() => processNextEvent(), 100);
+      break;
+  }
+}
+
+// --- Button Management ---
+function updateButtons() {
+  controlsEl.innerHTML = '';
+  if (gameState === 'title') {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-play';
+    btn.textContent = 'FIGHT';
+    btn.onclick = () => { ensureAudio(); resetBattle(); };
+    controlsEl.appendChild(btn);
+  } else if (gameState === 'battle' && canAct) {
+    const actions = [
+      { id: 'strike', label: 'Strike', sub: `${STRIKE_DMG} dmg (reliable)`, cls: 'btn-strike', key: 'Q' },
+      { id: 'heavy', label: 'Heavy', sub: `${HEAVY_DMG} dmg @ ${Math.round(HEAVY_HIT*100)}%`, cls: 'btn-heavy', key: 'W' },
+      { id: 'guard', label: 'Guard', sub: `blocks / counters ${GUARD_COUNTER_DMG}`, cls: 'btn-guard', key: 'E' },
+    ];
+    actions.forEach(a => {
+      const btn = document.createElement('button');
+      btn.className = `btn ${a.cls}`;
+      btn.innerHTML = `${a.label} <span class="btn-sub">${a.sub} [${a.key}]</span>`;
+      btn.onclick = () => executeTurn(a.id);
+      controlsEl.appendChild(btn);
+    });
+  } else if (gameState === 'gameover') {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-play';
+    btn.textContent = 'FIGHT AGAIN';
+    btn.onclick = () => { ensureAudio(); resetBattle(); };
+    controlsEl.appendChild(btn);
+  }
+}
+
+// --- Keyboard ---
+document.addEventListener('keydown', e => {
+  if (gameState === 'battle' && canAct) {
+    if (e.key === 'q' || e.key === 'Q') executeTurn('strike');
+    else if (e.key === 'w' || e.key === 'W') executeTurn('heavy');
+    else if (e.key === 'e' || e.key === 'E') executeTurn('guard');
+  } else if (gameState === 'title' || gameState === 'gameover') {
+    if (e.key === ' ' || e.key === 'Enter') { ensureAudio(); resetBattle(); }
+  }
+});
+
+// --- Win Probability Chart ---
+function drawWinProbChart(x, y, w, h) {
+  if (winProbHistory.length < 1) return;
+
+  ctx.save();
+
+  // Background
+  ctx.fillStyle = 'rgba(10, 12, 24, 0.85)';
+  ctx.beginPath();
+  ctx.roundRect(x - 4, y - 18, w + 8, h + 28, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#1a2040';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.roundRect(x - 4, y - 18, w + 8, h + 28, 6);
+  ctx.stroke();
+
+  // Title
+  ctx.font = '10px "Segoe UI", system-ui, sans-serif';
+  ctx.fillStyle = '#506080';
+  ctx.textAlign = 'left';
+  ctx.fillText('Win Probability', x, y - 6);
+
+  // Current prob
+  const currentP = winProbHistory[winProbHistory.length - 1];
+  ctx.textAlign = 'right';
+  ctx.fillStyle = currentP > 0.5 ? '#50c070' : currentP < 0.5 ? '#d06060' : '#8090a8';
+  ctx.font = 'bold 10px "Segoe UI", system-ui, sans-serif';
+  ctx.fillText(`${(currentP * 100).toFixed(0)}%`, x + w, y - 6);
+
+  // 50% line
+  ctx.strokeStyle = '#2a3050';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(x, y + h / 2);
+  ctx.lineTo(x + w, y + h / 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Chart line
+  if (winProbHistory.length >= 2) {
+    const step = w / Math.max(1, winProbHistory.length - 1);
+    ctx.beginPath();
+    for (let i = 0; i < winProbHistory.length; i++) {
+      const px = x + i * step;
+      const py = y + h - winProbHistory[i] * h;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.strokeStyle = '#5080c0';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Filled area
+    ctx.lineTo(x + (winProbHistory.length - 1) * step, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(0, y, 0, y + h);
+    grad.addColorStop(0, 'rgba(80, 128, 192, 0.15)');
+    grad.addColorStop(1, 'rgba(80, 128, 192, 0.02)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+
+  // Current point
+  if (winProbHistory.length > 0) {
+    const lastX = x + (winProbHistory.length - 1) * (w / Math.max(1, winProbHistory.length - 1));
+    const lastY = y + h - currentP * h;
+    ctx.fillStyle = '#5080c0';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#c0d0e0';
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+// --- Draw ---
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0, '#0a0c16');
+  bgGrad.addColorStop(1, '#080a12');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Floor
+  ctx.fillStyle = '#0e1020';
+  ctx.fillRect(0, 310, W, 110);
+  ctx.strokeStyle = '#1a1e30';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, 310);
+  ctx.lineTo(W, 310);
+  ctx.stroke();
+
+  if (gameState === 'title') {
+    titlePulse += 0.03;
+    ctx.font = 'bold 36px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#c0d0e8';
+    ctx.fillText('Paradox-Free Combat', W/2, 160);
+
+    ctx.font = '16px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = '#607090';
+    ctx.fillText('Where the fun strategy IS the winning strategy', W/2, 195);
+
+    ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = '#405070';
+    ctx.fillText('Parameters: HP=5 | Heavy=3dmg@70% | Guard=block+counter(2)', W/2, 230);
+
+    const alpha = 0.5 + Math.sin(titlePulse) * 0.3;
+    ctx.globalAlpha = alpha;
+    ctx.font = '15px "Segoe UI", system-ui, sans-serif';
+    ctx.fillStyle = '#6090c0';
+    ctx.fillText('Press SPACE or click FIGHT', W/2, 290);
+    ctx.globalAlpha = 1;
+
+    updateStatsDisplay();
+    return;
+  }
+
+  const shake = getShakeOffset();
+  ctx.save();
+  ctx.translate(shake.x, shake.y);
+
+  // Fighters
+  drawFighter(playerAnim.x, playerAnim.y, '#4080c0', player.hp, MAX_HP,
+    player.guarding, false, playerAnim.hitFlash, 'YOU');
+  drawFighter(enemyAnim.x, enemyAnim.y, '#c04040', enemy.hp, MAX_HP,
+    enemy.guarding, true, enemyAnim.hitFlash, 'CPU');
+
+  // Particles & text
+  drawParticles();
+  drawFloatingTexts();
+
+  ctx.restore();
+
+  // Win probability chart
+  drawWinProbChart(305, 30, 190, 60);
+
+  // Turn counter
+  ctx.font = '12px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#304060';
+  ctx.fillText(`Turn ${turnCount}`, W/2, H - 8);
+
+  // Game over text
+  if (gameState === 'gameover') {
+    ctx.font = 'bold 32px "Segoe UI", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    if (player.hp <= 0 && enemy.hp <= 0) {
+      ctx.fillStyle = '#8090a8';
+      ctx.fillText('DRAW', W/2, 180);
+    } else if (enemy.hp <= 0) {
+      ctx.fillStyle = '#50c070';
+      ctx.fillText('VICTORY', W/2, 180);
+    } else {
+      ctx.fillStyle = '#d06060';
+      ctx.fillText('DEFEAT', W/2, 180);
+    }
+  }
+
+  updateStatsDisplay();
+}
+
+function updateStatsDisplay() {
+  document.getElementById('statWins').textContent = stats.wins;
+  document.getElementById('statLosses').textContent = stats.losses;
+  document.getElementById('statStreak').textContent = stats.streak;
+  const heavyRate = stats.totalActions > 0
+    ? Math.round(stats.heavyCount / stats.totalActions * 100) + '%'
+    : '-';
+  document.getElementById('statHeavy').textContent = heavyRate;
+}
+
+// --- Main Loop ---
+let lastTime = 0;
+function gameLoop(timestamp) {
+  const dt = Math.min(3, (timestamp - lastTime) / 16.67);
+  lastTime = timestamp;
+
+  if (shakeDuration > 0) shakeDuration -= dt;
+  updateParticles(dt);
+  updateFloatingTexts(dt);
+
+  if (playerAnim) playerAnim.update(dt);
+  if (enemyAnim) enemyAnim.update(dt);
+
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// --- Init ---
+updateButtons();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
