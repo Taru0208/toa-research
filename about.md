@@ -28,6 +28,42 @@ Imagine watching a basketball game. A 50-48 score with 2 minutes left is excitin
 
 This is the *raw material* of fun — without tension, there's nothing to be excited about. But tension alone isn't enough. Watching dice roll can have extreme tension, but it's boring because you can't do anything about it.
 
+<div id="tension-demo" style="background:#0c0e18; border:1px solid #1a2040; border-radius:8px; padding:14px 18px; margin:16px 0; font-family:'Segoe UI',system-ui,sans-serif; color:#c8ccd4;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+<strong style="font-size:13px; color:#8098c0;">Try it: Best-of-5 Coin Flip</strong>
+<span id="td-score" style="font-size:12px; color:#607090;">You 0 — 0 CPU</span>
+</div>
+<div style="position:relative; height:22px; background:#141828; border-radius:4px; overflow:hidden; margin-bottom:8px;">
+<div id="td-bar" style="position:absolute;left:0;top:0;height:100%;width:50%;background:linear-gradient(90deg,#3060a0,#4080c0);border-radius:4px;transition:width 0.4s ease;"></div>
+<div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:#405060;"></div>
+<span id="td-pct" style="position:absolute;right:6px;top:3px;font-size:11px;color:#a0b0d0;font-family:'Consolas','SF Mono',monospace;">50%</span>
+</div>
+<div style="text-align:center;">
+<button id="td-btn" onclick="tdFlip()" style="background:linear-gradient(180deg,#1a3060,#102040);border:1px solid #3070c0;color:#c8ccd4;padding:6px 24px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;">Flip</button>
+<span id="td-result" style="margin-left:10px;font-size:12px;color:#607090;"></span>
+</div>
+<div id="td-msg" style="margin-top:8px;font-size:12px;color:#506080;text-align:center;min-height:16px;"></div>
+</div>
+<script>
+(function(){
+  var you=0,cpu=0,need=3,done=false;
+  function wp(){if(you>=need)return 1;if(cpu>=need)return 0;var yr=need-you,cr=need-cpu,p=0;for(var i=0;i<yr+cr-1;i++){var n=i,k=cr-1;if(k>n){continue;}var c=1;for(var j=0;j<k;j++)c=c*(n-j)/(j+1);p+=c*Math.pow(0.5,n+1);}return p;}
+  function up(){var p=wp();document.getElementById('td-bar').style.width=(p*100)+'%';document.getElementById('td-pct').textContent=Math.round(p*100)+'%';document.getElementById('td-score').textContent='You '+you+' — '+cpu+' CPU';}
+  window.tdFlip=function(){
+    if(done){you=0;cpu=0;done=false;document.getElementById('td-btn').textContent='Flip';document.getElementById('td-result').textContent='';document.getElementById('td-msg').textContent='';up();return;}
+    var h=Math.random()<0.5;
+    if(h){you++;}else{cpu++;}
+    document.getElementById('td-result').textContent=h?'Heads — you score!':'Tails — CPU scores.';
+    document.getElementById('td-result').style.color=h?'#50c070':'#d06060';
+    up();
+    if(you>=need||cpu>=need){done=true;document.getElementById('td-btn').textContent='Reset';
+    document.getElementById('td-msg').innerHTML=you>=need?'<span style="color:#50c070">You win!</span> Notice how the bar swung with each flip — that\'s tension.':'<span style="color:#d06060">CPU wins.</span> The swings you felt watching the bar — that\'s what tension measures.';
+    }
+  };
+  up();
+})();
+</script>
+
 ### 2. Does the fun strategy win? (Fun-Strategy Gap)
 
 This is the key insight: **a well-designed game rewards the exciting strategy**.
