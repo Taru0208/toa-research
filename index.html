@@ -6,39 +6,50 @@ title: Anticipation Theory Research
 <div class="home">
   <p>
     Many games have a hidden design flaw: the <strong>exciting strategy loses</strong>, and the <strong>boring strategy wins</strong>.
-    <a href="https://github.com/akalouis/anticipation-theory">Anticipation Theory</a> provides math to detect and fix this.
+    Players have to choose between having fun and winning — a bad trade-off.
   </p>
 
   <p>
-    <strong><a href="{{ '/design-lab/' | prepend: site.baseurl }}">Play the Design Lab</a></strong> — same combat game, two different sets of numbers. In "Before," you have to play defensively to win. In "After," the aggressive play IS the winning play. Feel the difference yourself.
+    <a href="https://github.com/akalouis/anticipation-theory">Anticipation Theory</a> provides a way to detect and fix this problem mathematically.
   </p>
 
+  <h2 style="margin-top: 2em;">Try It Yourself</h2>
+
   <p>
-    <strong><a href="{{ '/demo/' | prepend: site.baseurl }}">Interactive Engine</a></strong> — a technical visualization showing real-time anticipation values as two games unfold side-by-side.
+    <strong><a href="{{ '/design-lab/' | prepend: site.baseurl }}" style="font-size: 1.1em;">▶ Play the Design Lab</a></strong><br>
+    Play two versions of the same combat game. Same rules, different numbers. Feel the difference, then see what changed.
   </p>
 
   <hr>
 
-  <h2>Research Log</h2>
+  <details>
+    <summary><strong>Technical Demos & Research Log</strong></summary>
 
-  <ul class="post-list">
-    {% for post in site.posts %}
-      <li>
-        <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
-        {% if post.tags contains 'experiment' %}
-          <span class="post-meta"> · experiment</span>
-        {% elsif post.tags contains 'theory' %}
-          <span class="post-meta"> · theory</span>
-        {% elsif post.tags contains 'discovery' %}
-          <span class="post-meta"> · discovery</span>
-        {% endif %}
-        <h3>
-          <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
-        </h3>
-        {% if post.description %}
-          <p>{{ post.description }}</p>
-        {% endif %}
-      </li>
-    {% endfor %}
-  </ul>
+    <p style="margin-top: 1em;">
+      <a href="{{ '/demo/' | prepend: site.baseurl }}">Interactive Engine</a> — real-time anticipation visualization comparing two game variants.
+    </p>
+
+    <h3>Research Log</h3>
+
+    <ul class="post-list">
+      {% for post in site.posts %}
+        <li>
+          <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+          {% if post.tags contains 'experiment' %}
+            <span class="post-meta"> · experiment</span>
+          {% elsif post.tags contains 'theory' %}
+            <span class="post-meta"> · theory</span>
+          {% elsif post.tags contains 'discovery' %}
+            <span class="post-meta"> · discovery</span>
+          {% endif %}
+          <h3>
+            <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+          </h3>
+          {% if post.description %}
+            <p>{{ post.description }}</p>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </details>
 </div>

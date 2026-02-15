@@ -6,7 +6,7 @@ layout: null
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Design Lab — Before &amp; After</title>
+<title>Design Lab — Can Math Make Games More Fun?</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -25,6 +25,19 @@ body {
 h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; letter-spacing: -0.5px; }
 .subtitle { font-size: 13px; color: #607090; margin-bottom: 10px; }
 
+/* Phase indicator */
+.phase-bar {
+  display: flex; gap: 6px; margin-bottom: 8px; align-items: center;
+  font-size: 12px; color: #506080;
+}
+.phase-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: #1a2040; border: 1px solid #2a3050;
+  transition: all 0.3s;
+}
+.phase-dot.active { background: #4080c0; border-color: #6090d0; box-shadow: 0 0 6px rgba(64,128,192,0.4); }
+.phase-dot.done { background: #40a060; border-color: #50c070; }
+.phase-label { margin: 0 4px; }
+
 /* Tab selector */
 .tab-bar {
   display: flex; gap: 2px; margin-bottom: 8px; background: #0c0e18; border-radius: 8px; padding: 3px;
@@ -35,21 +48,23 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
   color: #607090; transition: all 0.2s; position: relative;
 }
 .tab:hover { color: #8090a8; }
-.tab.active-before {
-  background: linear-gradient(180deg, #2a1520 0%, #1a0e14 100%);
-  color: #d06060; border: 1px solid #502030;
+.tab.active-a {
+  background: linear-gradient(180deg, #1a2040 0%, #121830 100%);
+  color: #6090d0; border: 1px solid #304070;
 }
-.tab.active-after {
-  background: linear-gradient(180deg, #152a20 0%, #0e1a14 100%);
+.tab.active-b {
+  background: linear-gradient(180deg, #1a3020 0%, #122018 100%);
   color: #50c070; border: 1px solid #205030;
 }
-.tab .tag {
+.tab.locked {
+  opacity: 0.35; cursor: default; pointer-events: none;
+}
+.tab .tab-badge {
   font-size: 9px; position: absolute; top: 3px; right: 6px;
   padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: 0.3px;
-  white-space: nowrap;
+  white-space: nowrap; background: #1a2040; color: #506080;
 }
-.tab .tag-bad { background: #301520; color: #d06060; }
-.tab .tag-good { background: #153020; color: #50c070; }
+.tab .tab-badge.complete { background: #153020; color: #50c070; }
 
 /* Game area */
 #gameContainer { position: relative; width: 800px; max-width: 100vw; }
@@ -83,6 +98,11 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
   border-color: #3070c0; font-size: 16px; padding: 12px 36px; min-width: 140px;
 }
 .btn-play:hover:not(:disabled) { border-color: #5090e0; box-shadow: 0 0 16px rgba(48,112,192,0.4); }
+.btn-next {
+  background: linear-gradient(180deg, #1a4030 0%, #102820 100%);
+  border-color: #30a060; color: #80e0a0; font-size: 16px; padding: 12px 36px; min-width: 180px;
+}
+.btn-next:hover:not(:disabled) { border-color: #50c070; box-shadow: 0 0 16px rgba(48,192,96,0.4); }
 .btn-sub { font-size: 10px; color: #7080a0; display: block; margin-top: 2px; font-weight: 400; }
 
 /* Log */
@@ -113,6 +133,7 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
   max-width: 800px; width: 100%; margin: 10px 0 20px;
   background: #0c0e18; border: 1px solid #1a2040; border-radius: 8px;
   padding: 14px 18px; font-size: 13px; line-height: 1.6; color: #8090a8;
+  display: none;
 }
 #comparison h3 { font-size: 14px; color: #a0b0d0; margin-bottom: 8px; }
 .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -120,57 +141,95 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
   font-size: 11px; color: #607090; margin-bottom: 4px;
   text-transform: uppercase; letter-spacing: 0.5px;
 }
-.cmp-col.before h4 { color: #d06060; }
-.cmp-col.after h4 { color: #50c070; }
-.metric {
-  display: inline-block; background: #141828; padding: 2px 7px; border-radius: 4px;
-  font-family: 'Consolas', 'SF Mono', monospace; font-size: 12px; color: #a0b0d0;
-}
-.metric-bad { color: #d06060; border: 1px solid #301520; }
-.metric-good { color: #50c070; border: 1px solid #153020; }
-.highlight-bad { color: #d06060; font-weight: 600; }
-.highlight-good { color: #50c070; font-weight: 600; }
+.cmp-col.col-a h4 { color: #6090d0; }
+.cmp-col.col-b h4 { color: #50c070; }
 
-/* Recommendation banner */
-.rec-banner {
-  margin-top: 8px; padding: 8px 12px; border-radius: 6px; font-size: 12px;
+/* Result reveal */
+#result-reveal {
+  max-width: 800px; width: 100%; margin: 10px 0 20px;
+  background: linear-gradient(180deg, #0e1420 0%, #0c0e18 100%);
+  border: 1px solid #1a3050; border-radius: 10px;
+  padding: 20px 24px; display: none;
+  animation: fadeIn 0.5s ease;
 }
-.rec-before {
-  background: #1a0e14; border: 1px solid #402030; color: #c08090;
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+#result-reveal h3 { font-size: 18px; color: #e0e4ec; margin-bottom: 12px; font-weight: 700; }
+
+.reveal-section { margin: 12px 0; }
+.reveal-section h4 { font-size: 13px; color: #8098c0; margin-bottom: 6px; font-weight: 600; }
+.reveal-section p { font-size: 13px; color: #8090a8; line-height: 1.7; }
+.reveal-highlight { color: #50c070; font-weight: 600; }
+.reveal-dim { color: #d06060; font-weight: 600; }
+
+.reveal-data {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0;
 }
-.rec-after {
-  background: #0e1a14; border: 1px solid #204030; color: #80c090;
+.reveal-card {
+  background: #101828; border-radius: 8px; padding: 12px 14px;
+  border: 1px solid #1a2040;
+}
+.reveal-card h5 { font-size: 11px; color: #607090; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.reveal-stat {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; color: #8090a8; padding: 3px 0;
+}
+.reveal-stat .val { font-family: 'Consolas', 'SF Mono', monospace; font-weight: 600; }
+.reveal-stat .val.good { color: #50c070; }
+.reveal-stat .val.bad { color: #d06060; }
+.reveal-stat .val.neutral { color: #8090a8; }
+
+.reveal-insight {
+  margin-top: 14px; padding: 12px 16px; border-radius: 8px;
+  background: #0e1a14; border: 1px solid #1a3028;
+  font-size: 13px; color: #80c090; line-height: 1.7;
 }
 
-/* Win probability chart area in comparison */
-.chart-area {
-  margin-top: 10px; padding: 6px; background: #080a12; border-radius: 6px;
-  border: 1px solid #1a1e2e;
+.reveal-how {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid #1a2040;
 }
-.chart-label { font-size: 10px; color: #506080; margin-bottom: 2px; }
+.reveal-how h4 { font-size: 13px; color: #8098c0; margin-bottom: 8px; }
+.reveal-how p { font-size: 12px; color: #607090; line-height: 1.7; }
+.reveal-how a { color: #6090c0; text-decoration: none; }
+.reveal-how a:hover { text-decoration: underline; }
 
-/* Stat highlight bars */
+/* Free play banner */
+#free-play-banner {
+  max-width: 800px; width: 100%; text-align: center;
+  padding: 6px; font-size: 12px; color: #506080;
+  display: none;
+}
+
+/* Bar charts in reveal */
 .bar-container {
   display: flex; align-items: center; gap: 8px; margin: 3px 0;
 }
 .bar-label { font-size: 11px; color: #607090; width: 80px; text-align: right; }
 .bar-track { flex: 1; height: 14px; background: #141828; border-radius: 3px; overflow: hidden; position: relative; }
-.bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s ease; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 .bar-value { font-size: 10px; color: #a0b0d0; width: 50px; font-family: 'Consolas', 'SF Mono', monospace; }
 </style>
 </head>
 <body>
 <h1>Can Math Make a Game More Fun?</h1>
-<p class="subtitle">Same game, different balance. Play both and feel the difference.</p>
+<p class="subtitle">Play two versions of the same game. See which one feels better.</p>
+
+<div class="phase-bar" id="phaseBar">
+  <div class="phase-dot active" id="dot1"></div>
+  <span class="phase-label">Version A</span>
+  <div class="phase-dot" id="dot2"></div>
+  <span class="phase-label">Version B</span>
+  <div class="phase-dot" id="dot3"></div>
+  <span class="phase-label">Results</span>
+</div>
 
 <div class="tab-bar">
-  <div class="tab active-before" id="tabBefore" onclick="switchMode('before')">
-    Before
-    <span class="tag tag-bad">defense wins</span>
+  <div class="tab active-a" id="tabA" onclick="trySwitch('before')">
+    Version A
+    <span class="tab-badge" id="badgeA">0/3</span>
   </div>
-  <div class="tab" id="tabAfter" onclick="switchMode('after')">
-    After
-    <span class="tag tag-good">offense wins</span>
+  <div class="tab locked" id="tabB" onclick="trySwitch('after')">
+    Version B
+    <span class="tab-badge" id="badgeB">0/3</span>
   </div>
 </div>
 
@@ -181,104 +240,25 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
   <div id="stats-bar">
     <span>Wins: <span class="stat-val" id="sWins">0</span></span>
     <span>Losses: <span class="stat-val" id="sLosses">0</span></span>
-    <span>Heavy%: <span class="stat-val" id="sHeavy">-</span></span>
     <span>Win rate: <span class="stat-val" id="sWinRate">-</span></span>
   </div>
 </div>
 
+<div id="free-play-banner">
+  Switch freely between Version A and B. Press [1] or [2], or click the tabs above.
+</div>
+
+<div id="result-reveal">
+  <!-- Filled dynamically after both versions played -->
+</div>
+
 <div id="comparison">
-  <h3>The Problem &amp; The Fix</h3>
-  <div class="cmp-grid">
-    <div class="cmp-col before">
-      <h4>Before — "Play it safe to win"</h4>
-      <div>Heavy attack: <span class="metric">2 dmg, 50% hit</span></div>
-      <div>Guard: <span class="metric">blocks + counter 1 dmg</span></div>
-      <div style="margin-top:8px">
-        Best strategy: <span class="highlight-bad">Guard repeatedly</span><br>
-        Most exciting move: Heavy attack<br>
-      </div>
-      <div class="rec-banner rec-before">
-        The safe, boring strategy wins. The exciting, aggressive strategy loses.<br>
-        <strong>You have to choose between having fun and winning.</strong>
-      </div>
-    </div>
-    <div class="cmp-col after">
-      <h4>After — "Go aggressive to win"</h4>
-      <div>Heavy attack: <span class="metric">3 dmg, 70% hit</span></div>
-      <div>Guard: <span class="metric">blocks + counter 2 dmg</span></div>
-      <div style="margin-top:8px">
-        Best strategy: <span class="highlight-good">Heavy attack</span><br>
-        Most exciting move: Heavy attack<br>
-      </div>
-      <div class="rec-banner rec-after">
-        Heavy hits hard and lands often. Going aggressive IS the best play.<br>
-        <strong>The exciting choice is also the winning choice.</strong>
-      </div>
-    </div>
-  </div>
-
-  <div style="margin-top: 14px;">
-    <h3>Your Play Data</h3>
-    <div class="cmp-grid" id="play-data">
-      <div class="cmp-col before">
-        <h4>Before Stats</h4>
-        <div class="bar-container">
-          <span class="bar-label">Win rate</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-before-wr" style="width:0;background:#d06060"></div></div>
-          <span class="bar-value" id="val-before-wr">-</span>
-        </div>
-        <div class="bar-container">
-          <span class="bar-label">Heavy%</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-before-hr" style="width:0;background:#e09050"></div></div>
-          <span class="bar-value" id="val-before-hr">-</span>
-        </div>
-        <div class="bar-container">
-          <span class="bar-label">Games</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-before-gm" style="width:0;background:#5070a0"></div></div>
-          <span class="bar-value" id="val-before-gm">0</span>
-        </div>
-      </div>
-      <div class="cmp-col after">
-        <h4>After Stats</h4>
-        <div class="bar-container">
-          <span class="bar-label">Win rate</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-after-wr" style="width:0;background:#50c070"></div></div>
-          <span class="bar-value" id="val-after-wr">-</span>
-        </div>
-        <div class="bar-container">
-          <span class="bar-label">Heavy%</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-after-hr" style="width:0;background:#e09050"></div></div>
-          <span class="bar-value" id="val-after-hr">-</span>
-        </div>
-        <div class="bar-container">
-          <span class="bar-label">Games</span>
-          <div class="bar-track"><div class="bar-fill" id="bar-after-gm" style="width:0;background:#5070a0"></div></div>
-          <span class="bar-value" id="val-after-gm">0</span>
-        </div>
-      </div>
-    </div>
-    <div id="verdict" style="margin-top:10px; padding:8px 12px; border-radius:6px; font-size:12px; background:#141828; color:#607090; text-align:center; display:none;">
-    </div>
-  </div>
-
-  <div style="margin-top:14px; padding-top:12px; border-top:1px solid #1a2040;">
-    <h3 style="font-size:13px; color:#8098c0; margin-bottom:6px;">How does this work?</h3>
-    <p style="font-size:12px; color:#607090; line-height:1.7; margin:0;">
-      Many games have a hidden problem: the <strong style="color:#c08090;">exciting strategy loses</strong> and the <strong style="color:#c08090;">boring strategy wins</strong>.
-      Players must choose between having fun and winning — a bad trade-off.
-    </p>
-    <p style="font-size:12px; color:#607090; line-height:1.7; margin:6px 0 0;">
-      <a href="https://github.com/akalouis/anticipation-theory" target="_blank" style="color:#6090c0;">Anticipation Theory</a> provides a formula to measure this gap.
-      By adjusting the game's numbers (damage, hit rates, counter damage), we can make the exciting play <em>also</em> the correct play —
-      <strong style="color:#80c090;">eliminating the trade-off entirely</strong>.
-      Both versions above have the same rules and actions. Only the numbers changed.
-    </p>
-  </div>
+  <!-- Used for free-play stats after reveal -->
 </div>
 
 <script>
 // ============================================================
-//  DESIGN LAB — Before/After CPG Comparison
+//  DESIGN LAB — Guided Before/After Experience
 // ============================================================
 
 const canvas = document.getElementById('canvas');
@@ -287,21 +267,26 @@ const W = 800, H = 380;
 const controlsEl = document.getElementById('controls');
 const logEl = document.getElementById('log');
 
+// === FLOW STATE ===
+// phase: 'a' (playing version A) → 'b' (playing version B) → 'reveal' (showing results) → 'free' (free play)
+let flowPhase = 'a';
+const GAMES_REQUIRED = 3;
+
 // === TWO CONFIGURATIONS ===
 const CONFIGS = {
   before: {
-    label: 'Standard Design',
+    label: 'Version A',
     MAX_HP: 5,
     STRIKE_DMG: 1,
     HEAVY_DMG: 2,
     HEAVY_HIT: 0.50,
     GUARD_COUNTER: 1,
     GUARD_BLOCK: 0.50,
-    accentColor: '#d06060',
-    bgTint: [24, 12, 16],
+    accentColor: '#6090d0',
+    bgTint: [14, 16, 24],
   },
   after: {
-    label: 'ToA-Optimized Design',
+    label: 'Version B',
     MAX_HP: 5,
     STRIKE_DMG: 1,
     HEAVY_DMG: 3,
@@ -316,28 +301,237 @@ const CONFIGS = {
 let currentMode = 'before';
 let cfg = CONFIGS.before;
 
-// Per-mode stats
+// Per-mode stats (fresh each session for the guided flow)
 const modeStats = {
-  before: { wins: 0, losses: 0, heavyCount: 0, totalActions: 0 },
-  after: { wins: 0, losses: 0, heavyCount: 0, totalActions: 0 },
+  before: { wins: 0, losses: 0, heavyCount: 0, totalActions: 0, gamesPlayed: 0 },
+  after: { wins: 0, losses: 0, heavyCount: 0, totalActions: 0, gamesPlayed: 0 },
 };
-try {
-  const saved = localStorage.getItem('designLab_stats');
-  if (saved) Object.assign(modeStats, JSON.parse(saved));
-} catch(e) {}
-function saveStats() {
-  try { localStorage.setItem('designLab_stats', JSON.stringify(modeStats)); } catch(e) {}
+
+function trySwitch(mode) {
+  if (flowPhase === 'a' && mode === 'after') return; // locked
+  if (flowPhase === 'b' && mode === 'before') return; // locked during B phase
+  if (mode === currentMode) return;
+  switchMode(mode);
 }
 
 function switchMode(mode) {
   currentMode = mode;
   cfg = CONFIGS[mode];
-  document.getElementById('tabBefore').className = mode === 'before' ? 'tab active-before' : 'tab';
-  document.getElementById('tabAfter').className = mode === 'after' ? 'tab active-after' : 'tab';
+  document.getElementById('tabA').className = mode === 'before' ? 'tab active-a' : 'tab';
+  document.getElementById('tabB').className = mode === 'after' ? 'tab active-b' : 'tab';
   winProbCache = {};
   precomputeWinProb();
   gameState = 'title';
   updateButtons();
+  updateBadges();
+}
+
+function updateBadges() {
+  const ba = document.getElementById('badgeA');
+  const bb = document.getElementById('badgeB');
+  const ga = modeStats.before.gamesPlayed;
+  const gb = modeStats.after.gamesPlayed;
+  ba.textContent = ga >= GAMES_REQUIRED ? '✓' : `${ga}/${GAMES_REQUIRED}`;
+  bb.textContent = gb >= GAMES_REQUIRED ? '✓' : `${gb}/${GAMES_REQUIRED}`;
+  ba.className = ga >= GAMES_REQUIRED ? 'tab-badge complete' : 'tab-badge';
+  bb.className = gb >= GAMES_REQUIRED ? 'tab-badge complete' : 'tab-badge';
+}
+
+function updatePhaseUI() {
+  const d1 = document.getElementById('dot1');
+  const d2 = document.getElementById('dot2');
+  const d3 = document.getElementById('dot3');
+  d1.className = 'phase-dot' + (flowPhase === 'a' ? ' active' : ' done');
+  d2.className = 'phase-dot' + (flowPhase === 'b' ? ' active' : (flowPhase === 'reveal' || flowPhase === 'free' ? ' done' : ''));
+  d3.className = 'phase-dot' + (flowPhase === 'reveal' || flowPhase === 'free' ? ' active' : '');
+
+  // Tab locking
+  const tabA = document.getElementById('tabA');
+  const tabB = document.getElementById('tabB');
+  if (flowPhase === 'a') {
+    tabB.classList.add('locked');
+    tabA.classList.remove('locked');
+  } else if (flowPhase === 'b') {
+    tabA.classList.add('locked');
+    tabB.classList.remove('locked');
+  } else {
+    tabA.classList.remove('locked');
+    tabB.classList.remove('locked');
+  }
+
+  // Phase bar visibility
+  document.getElementById('phaseBar').style.display = flowPhase === 'free' ? 'none' : 'flex';
+  document.getElementById('free-play-banner').style.display = flowPhase === 'free' ? 'block' : 'none';
+}
+
+function checkPhaseTransition() {
+  if (flowPhase === 'a' && modeStats.before.gamesPlayed >= GAMES_REQUIRED) {
+    // Don't auto-transition — show a "Next" button
+    return;
+  }
+  if (flowPhase === 'b' && modeStats.after.gamesPlayed >= GAMES_REQUIRED) {
+    // Show reveal
+    return;
+  }
+}
+
+function advanceToB() {
+  flowPhase = 'b';
+  switchMode('after');
+  updatePhaseUI();
+  gameState = 'title';
+  updateButtons();
+}
+
+function showReveal() {
+  flowPhase = 'reveal';
+  updatePhaseUI();
+  document.getElementById('result-reveal').style.display = 'block';
+  buildRevealContent();
+
+  // Scroll to reveal
+  setTimeout(() => {
+    document.getElementById('result-reveal').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function enterFreePlay() {
+  flowPhase = 'free';
+  updatePhaseUI();
+  document.getElementById('result-reveal').style.display = 'block';
+  // Show comparison panel for ongoing stats
+  document.getElementById('comparison').style.display = 'block';
+  buildComparisonPanel();
+  gameState = 'title';
+  updateButtons();
+}
+
+function buildRevealContent() {
+  const r = document.getElementById('result-reveal');
+  const bSt = modeStats.before;
+  const aSt = modeStats.after;
+  const bTotal = bSt.wins + bSt.losses;
+  const aTotal = aSt.wins + aSt.losses;
+  const bWR = bTotal > 0 ? (bSt.wins / bTotal * 100) : 0;
+  const aWR = aTotal > 0 ? (aSt.wins / aTotal * 100) : 0;
+  const bHR = bSt.totalActions > 0 ? (bSt.heavyCount / bSt.totalActions * 100) : 0;
+  const aHR = aSt.totalActions > 0 ? (aSt.heavyCount / aSt.totalActions * 100) : 0;
+
+  // Determine insight
+  let insightHTML = '';
+  const moreAggressiveInB = aHR > bHR + 3;
+  const wonMoreInB = aWR > bWR + 5;
+
+  if (moreAggressiveInB && wonMoreInB) {
+    insightHTML = `You attacked more aggressively in Version B — and <strong>won more because of it</strong>. That's the whole point: Version B rewards exciting play instead of punishing it.`;
+  } else if (moreAggressiveInB && !wonMoreInB) {
+    insightHTML = `You went more aggressive in Version B. The win rates are close — with more games, you'd likely see that aggressive play pays off in B. Version A punishes that same instinct.`;
+  } else if (!moreAggressiveInB && wonMoreInB) {
+    insightHTML = `Interesting — you played similarly in both versions but won more in B. That's because even cautious play benefits from Version B's higher damage values. Try going all-out aggressive in B next time!`;
+  } else {
+    insightHTML = `You played both versions similarly. Try an experiment: play super aggressively in Version B (Heavy attack every turn) and see what happens to your win rate. Then try the same in Version A.`;
+  }
+
+  r.innerHTML = `
+    <h3>Here's What Happened</h3>
+
+    <div class="reveal-data">
+      <div class="reveal-card">
+        <h5>Version A</h5>
+        <div class="reveal-stat"><span>Win rate</span><span class="val ${bWR >= 50 ? 'neutral' : 'bad'}">${bWR.toFixed(0)}%</span></div>
+        <div class="reveal-stat"><span>Heavy attack usage</span><span class="val neutral">${bHR.toFixed(0)}%</span></div>
+        <div class="reveal-stat"><span>Games played</span><span class="val neutral">${bTotal}</span></div>
+      </div>
+      <div class="reveal-card">
+        <h5>Version B</h5>
+        <div class="reveal-stat"><span>Win rate</span><span class="val ${aWR >= 50 ? 'good' : 'neutral'}">${aWR.toFixed(0)}%</span></div>
+        <div class="reveal-stat"><span>Heavy attack usage</span><span class="val neutral">${aHR.toFixed(0)}%</span></div>
+        <div class="reveal-stat"><span>Games played</span><span class="val neutral">${aTotal}</span></div>
+      </div>
+    </div>
+
+    <div class="reveal-insight">${insightHTML}</div>
+
+    <div class="reveal-section">
+      <h4>So what's different?</h4>
+      <p>Both versions have the <strong style="color:#c0d0e8">exact same rules</strong> — Strike, Heavy, Guard. Same structure, same choices.<br>
+      The only difference is the <strong style="color:#c0d0e8">numbers</strong>:</p>
+      <div class="reveal-data" style="margin-top:8px;">
+        <div class="reveal-card">
+          <h5>Version A numbers</h5>
+          <div class="reveal-stat"><span>Heavy attack</span><span class="val bad">2 damage, 50% hit</span></div>
+          <div class="reveal-stat"><span>Guard counter</span><span class="val neutral">1 damage</span></div>
+          <div style="margin-top:6px; font-size:12px; color:#c08090;">→ Playing safe wins. Attacking is punished.</div>
+        </div>
+        <div class="reveal-card">
+          <h5>Version B numbers</h5>
+          <div class="reveal-stat"><span>Heavy attack</span><span class="val good">3 damage, 70% hit</span></div>
+          <div class="reveal-stat"><span>Guard counter</span><span class="val neutral">2 damage</span></div>
+          <div style="margin-top:6px; font-size:12px; color:#80c090;">→ Attacking pays off. The exciting move IS the smart move.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="reveal-how">
+      <h4>Why does this matter?</h4>
+      <p>Many games have a hidden problem: the <strong style="color:#c08090;">boring, safe strategy is the best strategy</strong>.
+      Players have to choose between having fun and winning — a bad trade-off.</p>
+      <p style="margin-top:6px;">By adjusting the numbers, we can make the exciting play <em>also</em> the winning play.
+      Same game, same rules — just better balanced.</p>
+      <p style="margin-top:6px;">This is based on research into <a href="https://github.com/akalouis/anticipation-theory" target="_blank">Anticipation Theory</a>
+      — a mathematical framework for measuring and improving the "fun" structure of games.
+      <a href="../about">Learn more about the math →</a></p>
+    </div>
+
+    <div style="text-align:center; margin-top:18px;">
+      <button class="btn btn-next" onclick="enterFreePlay()">Keep Playing — Free Mode</button>
+    </div>
+  `;
+}
+
+function buildComparisonPanel() {
+  const cp = document.getElementById('comparison');
+  cp.innerHTML = `
+    <h3>Your Stats (all games)</h3>
+    <div class="cmp-grid">
+      <div class="cmp-col col-a">
+        <h4>Version A</h4>
+        <div class="bar-container">
+          <span class="bar-label">Win rate</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-a-wr" style="width:0;background:#6090d0"></div></div>
+          <span class="bar-value" id="val-a-wr">-</span>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Heavy%</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-a-hr" style="width:0;background:#e09050"></div></div>
+          <span class="bar-value" id="val-a-hr">-</span>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Games</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-a-gm" style="width:0;background:#5070a0"></div></div>
+          <span class="bar-value" id="val-a-gm">0</span>
+        </div>
+      </div>
+      <div class="cmp-col col-b">
+        <h4>Version B</h4>
+        <div class="bar-container">
+          <span class="bar-label">Win rate</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-b-wr" style="width:0;background:#50c070"></div></div>
+          <span class="bar-value" id="val-b-wr">-</span>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Heavy%</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-b-hr" style="width:0;background:#e09050"></div></div>
+          <span class="bar-value" id="val-b-hr">-</span>
+        </div>
+        <div class="bar-container">
+          <span class="bar-label">Games</span>
+          <div class="bar-track"><div class="bar-fill" id="bar-b-gm" style="width:0;background:#5070a0"></div></div>
+          <span class="bar-value" id="val-b-gm">0</span>
+        </div>
+      </div>
+    </div>
+  `;
   updateComparisonBars();
 }
 
@@ -508,11 +702,9 @@ function drawFighter(x, y, color, hp, maxHp, guarding, faceLeft, hitFlash, name)
   ctx.save();
   const fl = hitFlash > 0 ? `rgba(255,255,255,${hitFlash * 0.6})` : null;
 
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath(); ctx.ellipse(x, y + 48, 22, 6, 0, 0, Math.PI * 2); ctx.fill();
 
-  // Guard shield
   if (guarding) {
     ctx.strokeStyle = '#50e080'; ctx.lineWidth = 2.5;
     ctx.globalAlpha = 0.4 + Math.sin(Date.now() * 0.006) * 0.15;
@@ -522,29 +714,24 @@ function drawFighter(x, y, color, hp, maxHp, guarding, faceLeft, hitFlash, name)
 
   const d = faceLeft ? -1 : 1;
 
-  // Legs
   ctx.strokeStyle = fl || color; ctx.lineWidth = 4; ctx.lineCap = 'round';
   ctx.beginPath();
   ctx.moveTo(x - 6, y + 20); ctx.lineTo(x - 10, y + 45);
   ctx.moveTo(x + 6, y + 20); ctx.lineTo(x + 10, y + 45);
   ctx.stroke();
 
-  // Body
   ctx.fillStyle = fl || color;
   ctx.beginPath(); ctx.roundRect(x - 12, y - 15, 24, 38, 4); ctx.fill();
 
-  // Arms
   ctx.strokeStyle = fl || color; ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(x - 12 * d, y - 5); ctx.lineTo(x - 22 * d, y + 10);
   ctx.moveTo(x + 12 * d, y - 5); ctx.lineTo(x + 22 * d, y + 5);
   ctx.stroke();
 
-  // Head
   ctx.fillStyle = fl || color;
   ctx.beginPath(); ctx.arc(x, y - 28, 14, 0, Math.PI * 2); ctx.fill();
 
-  // Eyes
   const ex = faceLeft ? -4 : 4;
   ctx.fillStyle = '#fff';
   ctx.beginPath();
@@ -557,19 +744,16 @@ function drawFighter(x, y, color, hp, maxHp, guarding, faceLeft, hitFlash, name)
   ctx.arc(x + ex + 5 + (faceLeft ? -0.5 : 0.5), y - 30, 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // HP Bar
   const bw = 60, bh = 7, bx = x - bw/2, by = y - 55;
   ctx.fillStyle = '#1a1020'; ctx.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
   const r = Math.max(0, hp / maxHp);
   ctx.fillStyle = r > 0.5 ? '#40c070' : r > 0.25 ? '#d0a030' : '#d04040';
   ctx.fillRect(bx, by, bw * r, bh);
 
-  // Name
   ctx.font = 'bold 12px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'center'; ctx.fillStyle = '#506080';
   ctx.fillText(name, x, by - 6);
 
-  // HP text
   ctx.font = '11px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#8090a8';
   ctx.fillText(`${hp}/${maxHp}`, x, by + bh + 14);
 
@@ -590,30 +774,21 @@ function computeWinProb(ph, eh) {
   const hd = cfg.HEAVY_DMG, sd = cfg.STRIKE_DMG, gc = cfg.GUARD_COUNTER;
   let nls = 0, slw = 0;
 
-  // Strike vs Strike
   nls += computeWinProb(ph - sd, eh - sd);
-  // Strike vs Heavy
   nls += hh * computeWinProb(ph - hd, eh) + (1-hh) * computeWinProb(ph, eh - gc);
-  // Strike vs Guard: blocked → no change
   slw += 1;
-  // Heavy vs Strike
   nls += hh * computeWinProb(ph, eh - hd) + (1-hh) * computeWinProb(ph - gc, eh);
-  // Heavy vs Heavy
   nls += hh*hh * computeWinProb(ph - hd, eh - hd) +
          hh*(1-hh) * computeWinProb(ph, eh - hd) +
          (1-hh)*hh * computeWinProb(ph - hd, eh);
   slw += (1-hh)*(1-hh);
-  // Heavy vs Guard
   slw += gb;
   nls += (1-gb) * hh * computeWinProb(ph, eh - hd);
   slw += (1-gb) * (1-hh);
-  // Guard vs Strike: blocked
   slw += 1;
-  // Guard vs Heavy
   slw += gb;
   nls += (1-gb) * hh * computeWinProb(ph - hd, eh);
   slw += (1-gb) * (1-hh);
-  // Guard vs Guard
   slw += 1;
 
   const result = nls / (9 - slw);
@@ -662,7 +837,6 @@ function addLog(html) {
 
 // === AI ===
 function aiDecide() {
-  // AI plays roughly uniform — not optimized, so player can test their own strategy
   const w = { strike: 30, heavy: 35, guard: 35 };
   if (enemy.hp <= 2) { w.heavy = 50; w.guard = 15; }
   if (player.hp <= 2) { w.heavy = 45; w.strike = 35; }
@@ -741,11 +915,27 @@ function executeTurn(pAction) {
   const st = modeStats[currentMode];
   st.totalActions++;
   if (pAction === 'heavy') st.heavyCount++;
-  saveStats();
   const eAction = aiDecide();
   turnQueue = resolveTurn(pAction, eAction);
   gameState = 'animating'; animTimer = 0;
   processEvent();
+}
+
+function onGameEnd() {
+  const st = modeStats[currentMode];
+  st.gamesPlayed++;
+  updateBadges();
+
+  // Check phase transitions
+  if (flowPhase === 'a' && st.gamesPlayed >= GAMES_REQUIRED) {
+    // Will show "Try Version B" button
+  } else if (flowPhase === 'b' && st.gamesPlayed >= GAMES_REQUIRED) {
+    // Will show "See Results" button
+  }
+
+  if (flowPhase === 'free') {
+    updateComparisonBars();
+  }
 }
 
 function processEvent() {
@@ -755,7 +945,7 @@ function processEvent() {
       const st = modeStats[currentMode];
       if (enemy.hp <= 0 && player.hp > 0) { st.wins++; playSound('win'); }
       else if (player.hp <= 0 && enemy.hp > 0) { st.losses++; playSound('lose'); }
-      saveStats(); updateComparisonBars();
+      onGameEnd();
     } else { gameState = 'battle'; canAct = true; }
     updateButtons(); return;
   }
@@ -806,6 +996,24 @@ function processEvent() {
 function updateButtons() {
   controlsEl.innerHTML = '';
   if (gameState === 'title') {
+    // Check if we need transition buttons
+    if (flowPhase === 'a' && modeStats.before.gamesPlayed >= GAMES_REQUIRED) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-next';
+      btn.textContent = 'Now Try Version B →';
+      btn.onclick = () => { ensureAudio(); advanceToB(); };
+      controlsEl.appendChild(btn);
+      return;
+    }
+    if (flowPhase === 'b' && modeStats.after.gamesPlayed >= GAMES_REQUIRED) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-next';
+      btn.textContent = 'See the Results →';
+      btn.onclick = () => { showReveal(); };
+      controlsEl.appendChild(btn);
+      return;
+    }
+
     const btn = document.createElement('button');
     btn.className = 'btn btn-play';
     btn.textContent = 'FIGHT';
@@ -813,23 +1021,39 @@ function updateButtons() {
     controlsEl.appendChild(btn);
   } else if (gameState === 'battle' && canAct) {
     const actions = [
-      { id: 'strike', label: 'Strike', sub: `${cfg.STRIKE_DMG} dmg (reliable)`, cls: 'btn-strike', key: 'Q' },
-      { id: 'heavy', label: 'Heavy', sub: `${cfg.HEAVY_DMG} dmg @ ${Math.round(cfg.HEAVY_HIT*100)}%`, cls: 'btn-heavy', key: 'W' },
-      { id: 'guard', label: 'Guard', sub: `block / counter ${cfg.GUARD_COUNTER}`, cls: 'btn-guard', key: 'E' },
+      { id: 'strike', label: 'Strike', sub: `${cfg.STRIKE_DMG} dmg (reliable) [Q]`, cls: 'btn-strike' },
+      { id: 'heavy', label: 'Heavy', sub: `${cfg.HEAVY_DMG} dmg @ ${Math.round(cfg.HEAVY_HIT*100)}% [W]`, cls: 'btn-heavy' },
+      { id: 'guard', label: 'Guard', sub: `block + counter ${cfg.GUARD_COUNTER} [E]`, cls: 'btn-guard' },
     ];
     actions.forEach(a => {
       const btn = document.createElement('button');
       btn.className = `btn ${a.cls}`;
-      btn.innerHTML = `${a.label} <span class="btn-sub">${a.sub} [${a.key}]</span>`;
+      btn.innerHTML = `${a.label} <span class="btn-sub">${a.sub}</span>`;
       btn.onclick = () => executeTurn(a.id);
       controlsEl.appendChild(btn);
     });
   } else if (gameState === 'gameover') {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-play';
-    btn.textContent = 'FIGHT AGAIN';
-    btn.onclick = () => { ensureAudio(); resetBattle(); };
-    controlsEl.appendChild(btn);
+    // Check if current phase needs transition
+    const st = modeStats[currentMode];
+    if (flowPhase === 'a' && st.gamesPlayed >= GAMES_REQUIRED) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-next';
+      btn.textContent = 'Now Try Version B →';
+      btn.onclick = () => { ensureAudio(); advanceToB(); };
+      controlsEl.appendChild(btn);
+    } else if (flowPhase === 'b' && st.gamesPlayed >= GAMES_REQUIRED) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-next';
+      btn.textContent = 'See the Results →';
+      btn.onclick = () => { showReveal(); };
+      controlsEl.appendChild(btn);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-play';
+      btn.textContent = 'FIGHT AGAIN';
+      btn.onclick = () => { ensureAudio(); resetBattle(); };
+      controlsEl.appendChild(btn);
+    }
   }
 }
 
@@ -840,11 +1064,19 @@ document.addEventListener('keydown', e => {
     else if (e.key === 'w' || e.key === 'W') executeTurn('heavy');
     else if (e.key === 'e' || e.key === 'E') executeTurn('guard');
   } else if (gameState === 'title' || gameState === 'gameover') {
-    if (e.key === ' ' || e.key === 'Enter') { ensureAudio(); resetBattle(); }
+    if (e.key === ' ' || e.key === 'Enter') {
+      // Handle transitions
+      const st = modeStats[currentMode];
+      if (flowPhase === 'a' && st.gamesPlayed >= GAMES_REQUIRED) { ensureAudio(); advanceToB(); return; }
+      if (flowPhase === 'b' && st.gamesPlayed >= GAMES_REQUIRED) { showReveal(); return; }
+      ensureAudio(); resetBattle();
+    }
   }
-  // Tab switching with 1/2
-  if (e.key === '1') switchMode('before');
-  if (e.key === '2') switchMode('after');
+  // Tab switching only in free play
+  if (flowPhase === 'free') {
+    if (e.key === '1') trySwitch('before');
+    if (e.key === '2') trySwitch('after');
+  }
 });
 
 // === WIN PROB CHART ===
@@ -856,7 +1088,7 @@ function drawWPChart(x, y, w, h) {
   ctx.strokeStyle = '#1a2040'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.roundRect(x-4, y-18, w+8, h+28, 6); ctx.stroke();
   ctx.font = '10px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#506080'; ctx.textAlign = 'left';
-  ctx.fillText('Win Probability', x, y - 6);
+  ctx.fillText('Win Chance', x, y - 6);
   const cp = wpHistory[wpHistory.length - 1];
   ctx.textAlign = 'right';
   ctx.fillStyle = cp > 0.5 ? '#50c070' : cp < 0.5 ? '#d06060' : '#8090a8';
@@ -891,25 +1123,17 @@ function drawWPChart(x, y, w, h) {
   ctx.restore();
 }
 
-// === MODE INDICATOR ===
+// === MODE INDICATOR (on canvas) ===
 function drawModeIndicator() {
-  const label = currentMode === 'before' ? 'BEFORE' : 'AFTER';
-  const sub = currentMode === 'before' ? 'Defense wins — fun ≠ winning' : 'Offense wins — fun = winning';
-  const color = cfg.accentColor;
-
+  const label = cfg.label;
   ctx.save();
   ctx.font = 'bold 13px "Segoe UI", system-ui, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillStyle = color;
+  ctx.fillStyle = cfg.accentColor;
   ctx.fillText(label, 16, 24);
-  ctx.font = '10px "Segoe UI", system-ui, sans-serif';
-  ctx.fillStyle = '#506080';
-  ctx.fillText(sub, 16, 38);
-
-  // Param box
   ctx.font = '9px "Consolas", "SF Mono", monospace';
   ctx.fillStyle = '#405060';
-  ctx.fillText(`Heavy: ${cfg.HEAVY_DMG}dmg @${Math.round(cfg.HEAVY_HIT*100)}%  Guard: block ${Math.round(cfg.GUARD_BLOCK*100)}% + counter ${cfg.GUARD_COUNTER}`, 16, 52);
+  ctx.fillText(`Heavy: ${cfg.HEAVY_DMG}dmg @${Math.round(cfg.HEAVY_HIT*100)}%  Guard: counter ${cfg.GUARD_COUNTER}`, 16, 38);
   ctx.restore();
 }
 
@@ -921,7 +1145,6 @@ function draw() {
   bg.addColorStop(1, '#080a12');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
-  // Floor
   ctx.fillStyle = '#0e1020'; ctx.fillRect(0, 290, W, 90);
   ctx.strokeStyle = '#1a1e30'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(0, 290); ctx.lineTo(W, 290); ctx.stroke();
@@ -930,30 +1153,49 @@ function draw() {
 
   if (gameState === 'title') {
     titlePulse += 0.03;
-    ctx.font = 'bold 30px "Segoe UI", system-ui, sans-serif';
-    ctx.textAlign = 'center'; ctx.fillStyle = '#c0d0e8';
-    ctx.fillText('Can Math Make a Game More Fun?', W/2, 130);
-    ctx.font = '15px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#607090';
-    ctx.fillText('Same game, different balance. Play both versions.', W/2, 158);
-    ctx.font = '13px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#506880';
-    ctx.fillText('In "Before," you have to play defensively to win.', W/2, 185);
-    ctx.fillText('In "After," the exciting aggressive play IS the winning play.', W/2, 202);
-    ctx.font = '13px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#405070';
-    const paramText = currentMode === 'before'
-      ? 'Currently: Before — Heavy 2dmg@50%, Guard counter 1'
-      : 'Currently: After — Heavy 3dmg@70%, Guard counter 2';
-    ctx.fillText(paramText, W/2, 228);
 
-    const a = 0.5 + Math.sin(titlePulse) * 0.3;
-    ctx.globalAlpha = a;
-    ctx.font = '14px "Segoe UI", system-ui, sans-serif';
-    ctx.fillStyle = cfg.accentColor;
-    ctx.fillText('Press SPACE or click FIGHT', W/2, 268);
-    ctx.globalAlpha = 1;
+    // Different title text based on phase
+    ctx.textAlign = 'center';
 
-    ctx.font = '11px "Segoe UI", system-ui, sans-serif';
-    ctx.fillStyle = '#354060';
-    ctx.fillText('Press [1] for Before, [2] for After', W/2, 295);
+    if (flowPhase === 'a') {
+      ctx.font = 'bold 24px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#c0d0e8';
+      ctx.fillText('Version A', W/2, 120);
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#607090';
+      ctx.fillText('Fight the CPU. Choose Strike, Heavy, or Guard each turn.', W/2, 148);
+      ctx.fillText('Play naturally — try whatever strategy feels right.', W/2, 168);
+      const remain = GAMES_REQUIRED - modeStats.before.gamesPlayed;
+      if (remain > 0) {
+        ctx.font = '12px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#506080';
+        ctx.fillText(`${remain} game${remain > 1 ? 's' : ''} to go`, W/2, 198);
+      }
+    } else if (flowPhase === 'b') {
+      ctx.font = 'bold 24px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#80e0a0';
+      ctx.fillText('Version B', W/2, 120);
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#607090';
+      ctx.fillText('Same game, same rules. Something is different though.', W/2, 148);
+      ctx.fillText('Play the same way and see what happens.', W/2, 168);
+      const remain = GAMES_REQUIRED - modeStats.after.gamesPlayed;
+      if (remain > 0) {
+        ctx.font = '12px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#506080';
+        ctx.fillText(`${remain} game${remain > 1 ? 's' : ''} to go`, W/2, 198);
+      }
+    } else {
+      // Free play
+      ctx.font = 'bold 22px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#c0d0e8';
+      ctx.fillText(cfg.label, W/2, 130);
+      ctx.font = '13px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#506080';
+      ctx.fillText('Free play — switch versions with [1] and [2]', W/2, 155);
+    }
+
+    const st = modeStats[currentMode];
+    if (st.gamesPlayed < GAMES_REQUIRED || flowPhase === 'free') {
+      const a = 0.5 + Math.sin(titlePulse) * 0.3;
+      ctx.globalAlpha = a;
+      ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+      ctx.fillStyle = cfg.accentColor;
+      ctx.fillText('Press SPACE or click FIGHT', W/2, 248);
+      ctx.globalAlpha = 1;
+    }
 
     updateStatsDisplay(); return;
   }
@@ -985,70 +1227,34 @@ function updateStatsDisplay() {
   const st = modeStats[currentMode];
   document.getElementById('sWins').textContent = st.wins;
   document.getElementById('sLosses').textContent = st.losses;
-  const hr = st.totalActions > 0 ? Math.round(st.heavyCount / st.totalActions * 100) + '%' : '-';
-  document.getElementById('sHeavy').textContent = hr;
   const total = st.wins + st.losses;
   const wr = total > 0 ? Math.round(st.wins / total * 100) + '%' : '-';
   document.getElementById('sWinRate').textContent = wr;
 }
 
-// === COMPARISON BARS ===
+// === COMPARISON BARS (free play) ===
 function updateComparisonBars() {
-  for (const mode of ['before', 'after']) {
+  for (const [mode, prefix] of [['before', 'a'], ['after', 'b']]) {
     const st = modeStats[mode];
     const total = st.wins + st.losses;
     const wr = total > 0 ? st.wins / total * 100 : 0;
     const hr = st.totalActions > 0 ? st.heavyCount / st.totalActions * 100 : 0;
 
-    document.getElementById(`bar-${mode}-wr`).style.width = wr + '%';
-    document.getElementById(`val-${mode}-wr`).textContent = total > 0 ? wr.toFixed(0) + '%' : '-';
-    document.getElementById(`bar-${mode}-hr`).style.width = hr + '%';
-    document.getElementById(`val-${mode}-hr`).textContent = st.totalActions > 0 ? hr.toFixed(0) + '%' : '-';
+    const wrEl = document.getElementById(`bar-${prefix}-wr`);
+    const hrEl = document.getElementById(`bar-${prefix}-hr`);
+    const gmEl = document.getElementById(`bar-${prefix}-gm`);
+    if (!wrEl) return; // Panel not yet built
+
+    wrEl.style.width = wr + '%';
+    document.getElementById(`val-${prefix}-wr`).textContent = total > 0 ? wr.toFixed(0) + '%' : '-';
+    hrEl.style.width = hr + '%';
+    document.getElementById(`val-${prefix}-hr`).textContent = st.totalActions > 0 ? hr.toFixed(0) + '%' : '-';
     const maxGames = Math.max(
       modeStats.before.wins + modeStats.before.losses,
       modeStats.after.wins + modeStats.after.losses, 1
     );
-    document.getElementById(`bar-${mode}-gm`).style.width = (total / maxGames * 100) + '%';
-    document.getElementById(`val-${mode}-gm`).textContent = total;
-  }
-
-  // Verdict
-  const bTotal = modeStats.before.wins + modeStats.before.losses;
-  const aTotal = modeStats.after.wins + modeStats.after.losses;
-  const verdict = document.getElementById('verdict');
-
-  if (bTotal >= 3 && aTotal >= 3) {
-    const bWR = modeStats.before.wins / bTotal;
-    const aWR = modeStats.after.wins / aTotal;
-    const bHR = modeStats.before.totalActions > 0 ? modeStats.before.heavyCount / modeStats.before.totalActions : 0;
-    const aHR = modeStats.after.totalActions > 0 ? modeStats.after.heavyCount / modeStats.after.totalActions : 0;
-
-    let msg = '';
-    if (aHR > bHR + 0.05 && aWR > bWR - 0.1) {
-      msg = '💡 You attacked more in "After" — and it paid off. That\'s the point: when aggressive play is rewarded, the game feels better.';
-      verdict.style.borderColor = '#205030';
-      verdict.style.color = '#80c090';
-    } else if (aHR > bHR + 0.05 && aWR < bWR - 0.1) {
-      msg = 'You went aggressive in "After" but won less. Try a few more rounds — the numbers favor Heavy attack here.';
-      verdict.style.borderColor = '#503020';
-      verdict.style.color = '#c09080';
-    } else if (bHR > 0.5 && bWR < 0.4) {
-      msg = '💡 Notice how attacking in "Before" gets you killed? The safe Guard strategy wins, but it\'s boring. That\'s a design flaw.';
-      verdict.style.borderColor = '#402030';
-      verdict.style.color = '#c08090';
-    } else {
-      msg = `Before: ${(bWR*100).toFixed(0)}% wins, ${(bHR*100).toFixed(0)}% Heavy. After: ${(aWR*100).toFixed(0)}% wins, ${(aHR*100).toFixed(0)}% Heavy. Keep playing to see the pattern.`;
-      verdict.style.borderColor = '#1a2040';
-      verdict.style.color = '#8090a8';
-    }
-    verdict.textContent = msg;
-    verdict.style.display = 'block';
-  } else {
-    const needed = Math.max(0, 3 - bTotal) + Math.max(0, 3 - aTotal);
-    verdict.textContent = `Play at least 3 games in each mode to see the comparison. (${needed} more needed)`;
-    verdict.style.display = 'block';
-    verdict.style.borderColor = '#1a2040';
-    verdict.style.color = '#506080';
+    gmEl.style.width = (total / maxGames * 100) + '%';
+    document.getElementById(`val-${prefix}-gm`).textContent = total;
   }
 }
 
@@ -1065,7 +1271,8 @@ function loop(ts) {
   requestAnimationFrame(loop);
 }
 updateButtons();
-updateComparisonBars();
+updateBadges();
+updatePhaseUI();
 requestAnimationFrame(loop);
 </script>
 </body>
