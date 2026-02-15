@@ -69,7 +69,7 @@ The principle applies broadly:
 
 ## Going Deeper
 
-<details>
+<details markdown="1">
 <summary>Technical Details</summary>
 
 ### Formal Definitions
