@@ -47,7 +47,7 @@ This is the *raw material* of fun — without tension, there's nothing to be exc
 <script>
 (function(){
   var you=0,cpu=0,need=3,done=false;
-  function wp(){if(you>=need)return 1;if(cpu>=need)return 0;var yr=need-you,cr=need-cpu,p=0;for(var i=0;i<yr+cr-1;i++){var n=i,k=cr-1;if(k>n){continue;}var c=1;for(var j=0;j<k;j++)c=c*(n-j)/(j+1);p+=c*Math.pow(0.5,n+1);}return p;}
+  function wp(){var yr=need-you,cr=need-cpu;function r(a,b){if(a<=0)return 1;if(b<=0)return 0;return 0.5*r(a-1,b)+0.5*r(a,b-1);}return r(yr,cr);}
   function up(){var p=wp();document.getElementById('td-bar').style.width=(p*100)+'%';document.getElementById('td-pct').textContent=Math.round(p*100)+'%';document.getElementById('td-score').textContent='You '+you+' — '+cpu+' CPU';}
   window.tdFlip=function(){
     if(done){you=0;cpu=0;done=false;document.getElementById('td-btn').textContent='Flip';document.getElementById('td-result').textContent='';document.getElementById('td-msg').textContent='';up();return;}
