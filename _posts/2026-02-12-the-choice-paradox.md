@@ -4,7 +4,7 @@ featured: true
 title: "The Choice Paradox: Why Optimal Play Is Less Fun"
 date: 2026-02-12
 tags: [experiment, discovery]
-description: "Adding player choice to ToA models reveals a surprising result: Nash equilibrium play consistently reduces GDS by 5-7%. Optimal strategy makes games less engaging."
+description: "Adding player choice to ToA models reveals a tension: optimal play reduces variance by 5-7%. The key isn't that choice is bad — it's that equilibrium structure determines how much tension survives."
 ---
 
 All existing ToA models treat games as pure chance — dice rolls, random encounters, probability-weighted outcomes. No player chooses anything. But real games are about *decisions*. What happens when we add meaningful choice to the framework?
@@ -55,9 +55,11 @@ The effect weakens slightly with longer games but is always negative.
 
 ## Why This Happens
 
-The math is straightforward. Nash equilibrium *minimizes exploitability* — it reduces the variance of outcomes by avoiding worst-case scenarios. But variance of outcomes is exactly what A₁ measures. By playing optimally, you're literally optimizing *against* anticipation.
+Nash equilibrium *minimizes exploitability* — it concentrates probability on safe options and avoids worst-case scenarios. In this game, Defend gets 50% weight because it's the least punishable action. But variance of outcomes is exactly what generates anticipation. So optimal play systematically squeezes out the uncertainty that makes the game tense.
 
-This is the **Choice Paradox**: the better you play, the less exciting the game becomes.
+This is the **Choice Paradox**: optimizing to win means optimizing against tension.
+
+Note what's actually happening — it's not that "choice is bad." It's that this game's Nash equilibrium is concentrated (50% on one action). The equilibrium has low entropy, so skilled play converges toward predictable patterns. This distinction matters, because it points directly to a solution.
 
 ## Pure Strategies: The Death of Fun
 
@@ -73,7 +75,7 @@ GDS drops to zero. A deterministic game has no uncertainty, therefore no anticip
 
 ## Dominant Strategy = Maximum Damage
 
-I tested an outcome table where Attack dominates all other options (Attack beats everything more than alternatives). The Nash equilibrium converges to 100% Attack — a pure strategy.
+What happens when one action beats all others? I tested an outcome table where Attack dominates — it's always better than Defend or Special regardless of what the opponent does. The Nash equilibrium collapses to 100% Attack, a pure strategy with zero entropy.
 
 | Variant | GDS (Random) | GDS (Nash) | Impact |
 |---|---|---|---|
@@ -81,7 +83,7 @@ I tested an outcome table where Attack dominates all other options (Attack beats
 | Dominant strategy | 0.446 | 0.000 | -100% |
 | High-variance | 0.560 | 0.333 | -40.4% |
 
-When a dominant strategy exists, Nash play kills engagement entirely. The game with "interesting" options but a clear best choice is worse than a game with boring options but genuine uncertainty.
+The pattern is clear: the more concentrated the Nash equilibrium, the larger the gap between random and optimal play. Balanced games (high-entropy equilibrium) lose only 6%. Dominated games (zero-entropy equilibrium) lose everything. The high-variance game sits in between — wider outcome swings create more random-play tension, but the equilibrium still favors specific actions, so skilled play compresses it heavily.
 
 ## The Design Implication
 
@@ -95,7 +97,7 @@ ToA quantifies this: **games where Nash equilibrium has high entropy (close to u
 
 ## More Actions = More Engagement?
 
-Testing with 2-5 available actions per player (random play):
+Testing with 2-5 available actions per player (random play, with randomly generated payoff matrices):
 
 | Actions | GDS | A₁ | A₂ |
 |---|---|---|---|
@@ -104,18 +106,19 @@ Testing with 2-5 available actions per player (random play):
 | 4 | 0.483 | 0.112 | 0.183 |
 | 5 | 0.494 | 0.204 | 0.168 |
 
-More actions generally increase GDS, but with diminishing returns. The jump from 2 to 3 actions is massive (+122%), while 4 to 5 adds only 2.3%. This suggests 3-4 meaningful actions per decision point is a sweet spot.
+More actions generally increase GDS, but with diminishing returns. The jump from 2→3 is massive (+122%); 4→5 adds only 2.3%.
+
+An interesting detail: A₁ actually *drops* from 3 to 4 actions (0.176 → 0.112), yet GDS rises. This is because A₂ increases significantly (0.135 → 0.183) — with more actions, the game develops more *strategic depth* even as immediate tension per turn decreases. The additional action creates more branching paths, so your current choice has a bigger impact on *future* tension levels.
+
+This is a single experiment with random payoff matrices, so the specific numbers shouldn't be taken as universal. But the qualitative pattern — more actions shift engagement from immediate tension (A₁) to strategic depth (A₂) — appears robust.
 
 ## The Takeaway
 
-In ToA's framework, player agency is a *constraint* on engagement, not a source of it. The more optimally players can play, the less uncertain the game becomes, and the lower the GDS.
+The paradox isn't that choice is bad — it's that **the structure of the equilibrium determines whether skilled play preserves or destroys tension**.
 
-But this doesn't mean choices are bad — it means the *design challenge* is creating games where:
-1. Players feel they're making meaningful decisions
-2. The optimal strategy still involves substantial randomness
-3. Sub-optimal play doesn't collapse the game (it might even be more fun)
+When the Nash equilibrium is concentrated (one dominant action), skilled play converges toward predictable patterns and tension collapses. When the equilibrium has high entropy (close to uniform mixing), skilled play still involves genuine uncertainty, and the GDS gap shrinks.
 
-The best games are those where the feeling of choice and the mathematics of uncertainty are in harmony.
+This gives designers a concrete target: **design payoff structures where the optimal strategy naturally involves substantial mixing**. Poker achieves this — optimal play requires randomized bluffing frequencies. Tic-tac-toe fails — optimal play is deterministic. The difference isn't complexity; it's equilibrium entropy.
 
 ---
 

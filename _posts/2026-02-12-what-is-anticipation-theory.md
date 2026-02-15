@@ -4,12 +4,12 @@ featured: true
 title: "What is Anticipation Theory?"
 date: 2026-02-12
 tags: [theory, overview]
-description: "A mathematical framework that answers the question: can we measure fun?"
+description: "A mathematical framework that measures the structural tension of games — the raw material of engagement."
 ---
 
-Can you measure fun? Not satisfaction surveys or retention metrics — the raw, moment-to-moment *engagement* of playing a game?
+Can you measure the *tension* in a game? Not whether players enjoy it — that depends on taste, context, and a hundred other things. But the structural tension: how much the question "who's winning?" swings from moment to moment?
 
-Anticipation Theory says yes.
+Anticipation Theory says yes. And that tension turns out to be a surprisingly good foundation for understanding engagement.
 
 ## The Core Idea
 
@@ -27,7 +27,7 @@ A₁(s) = √( Σ P(s→s') · (D(s') - μ)² )
 
 Where `D(s')` is the desirability of reaching state s', and μ is the expected value.
 
-A fair coin toss gives A₁ = 0.500 — the theoretical maximum for a binary outcome. Rock-Paper-Scissors achieves A₁ = 0.471 (94.2% of the maximum) because even a perfectly random game isn't a pure coin flip once you have three outcomes.
+A fair coin toss gives A₁ = 0.500 — the theoretical maximum for a binary outcome (win or lose, 50/50). Rock-Paper-Scissors achieves A₁ = 0.471 because its three outcomes (win/draw/lose at 1/3 each) spread probability more evenly, reducing the variance compared to a sharp 50/50 split.
 
 The insight: **A₁ captures immediate excitement**. High A₁ means anything could happen right now.
 
@@ -53,7 +53,11 @@ The GDS combines all anticipation components into a single metric. It's the weig
 | GA-Optimized (symmetric) | **0.979** | Maximum symmetric GDS |
 | GA + Accumulation | **1.429** | Best discovered so far |
 
-Higher GDS correlates with the intuitive sense that a game is more engaging. But more interesting than the number itself is *which components contribute* — A₁-heavy games feel like gambling; A₂+-heavy games feel strategic.
+Higher GDS means more structural tension — the game's state creates wider swings in "who's winning?" over time. But more interesting than the number itself is *which components contribute* — A₁-heavy games feel like gambling; A₂+-heavy games feel strategic.
+
+**An important caveat:** GDS measures *tension potential*, not fun directly. A dice-rolling game with no player decisions can have high GDS — plenty of dramatic swings, but no way to influence them. Tension is the *raw material* of engagement; what turns it into fun is player agency. A game needs both.
+
+Why does GA + Accumulation score so much higher than the symmetric optimum? Symmetric games have a ceiling: when both sides are identical, the initial win probability is always 50%, limiting how far outcomes can swing. Accumulation mechanics (resources that carry between turns) break this symmetry — they create states where one player has built an advantage, producing a wider range of win probabilities across the game and therefore higher GDS.
 
 ## Why This Matters
 

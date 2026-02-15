@@ -1,7 +1,7 @@
 ---
 layout: post
 featured: true
-title: "The Comeback Paradox: Why Designed Reversals Kill Fun"
+title: "The Comeback Paradox: Why Designed Reversals Reduce Tension"
 date: 2026-02-14 15:00:00 +0900
 tags: [experiment, game-design, paradox]
 ---
@@ -18,7 +18,7 @@ Then we added a "desperation bonus" — when you lose a round, you get extra coi
 
 **It didn't.**
 
-## Results
+## Results: CoinDuel
 
 | Variant | GDS | A₁ | A₂+ | Depth Ratio |
 |:---|:---:|:---:|:---:|:---:|
@@ -28,34 +28,41 @@ Then we added a "desperation bonus" — when you lose a round, you get extra coi
 | + Desperation bonus 3 | 0.379 | — | — | 44% |
 | + Desperation bonus 4 | 0.380 | — | — | 44% |
 
-Every level of comeback bonus *reduced* GDS. The base game with zero artificial comebacks is the most engaging version.
+Every level of comeback bonus *reduced* GDS. The base game with zero artificial comebacks has the highest tension.
+
+## Cross-Validation: HpGame
+
+To check if this pattern holds beyond CoinDuel, I tested the same principle on HpGame — a simpler 1v1 combat model (HP=5, coin flip each turn). The comeback variant: the trailing player (lower HP) deals double damage with some probability.
+
+| Comeback % | GDS | vs Base | A₁ Change | A₂ Change |
+|:---:|:---:|:---:|:---:|:---:|
+| 0% (base) | 0.431 | — | — | — |
+| 10% | 0.409 | -5.0% | +0.6% | -11.4% |
+| 20% | 0.389 | -9.7% | -0.7% | -20.5% |
+| 30% | 0.369 | -14.3% | -2.9% | -28.0% |
+
+**Same pattern, stronger effect.** At 30% comeback chance, HpGame loses 14.3% of its GDS — more than double CoinDuel's 6% drop.
+
+The per-component breakdown reveals *where* the damage happens: A₁ (immediate excitement per turn) barely changes (-2.9%). **A₂ takes the biggest hit (-28%)** — the anticipation of how tension will evolve over future turns. Higher-order components (A₄, A₅) drop 23-35%. Comeback mechanics don't make individual turns less exciting. They destroy *structural depth* — the feeling that this turn matters because it shapes what future turns will feel like.
 
 ## Why This Happens
 
-The math reveals the mechanism. GDS comes from **uncertainty about outcomes** — the probability swings between winning and losing states. Comeback mechanics reduce GDS by:
+The HpGame data reveals the mechanism clearly. Comeback mechanics primarily destroy **A₂** (anticipation of future tension) while barely touching **A₁** (immediate excitement):
 
-1. **Flattening consequences.** When losing is softened (you get bonus coins), the gap between "ahead" and "behind" narrows. The d_global values across states become more uniform.
+**Compressing the consequence space.** When losing is automatically softened, the gap between "ahead" and "behind" narrows. In CoinDuel, wagering 3 coins while your opponent has 1 normally gives you a 71/29 edge. The desperation bonus narrows this — the losing player quickly rebuilds, making every round feel similar. In HpGame, the trailing player's double-damage chance means being down 2 HP isn't as dangerous as it should be.
 
-2. **Reducing A₂+ anticipation.** The higher-order anticipation components (A₂, A₃, ...) depend on *cascading uncertainty* — how today's uncertainty affects tomorrow's uncertainty. When the loser gets compensated, future states become more predictable, dampening the cascade.
+**Destroying cascading uncertainty.** A₂ measures whether the current turn affects *how tense future turns will be*. When the loser gets compensated, future states become more predictable regardless of what happens now. This flattens the "cascade" of uncertainty across the game's timeline.
 
-3. **Compressing the probability space.** In the base game, wagering 3 coins while your opponent has 1 gives you a significant edge (71/29 after draw resolution). The desperation bonus narrows this asymmetry — the losing player quickly rebuilds their bank, making every round feel similar.
+The key insight: comeback mechanics don't make individual moments less exciting — each coin flip, each hit, still has roughly the same immediate drama. What they destroy is *why those moments matter*. When consequences are reversible, nothing has lasting weight.
 
-Put differently: the drama of a comeback requires the *real possibility of not coming back*. When you guarantee the comeback, you eliminate the anticipation that made it exciting.
+## The Structural Distinction
 
-## The General Principle
+Not all "helping the loser" mechanics work the same way. The key distinction is between **automatic compensation** and **optional tools**:
 
-This connects to a deeper pattern we've seen across domains:
+- **Automatic compensation** (desperation bonus, rubber-banding): Triggers without player input. Compresses consequence space. Reduces GDS in both games tested.
+- **Optional tools** (choosing to save resources, deciding when to bet big): Adds a strategic layer. The player *earns* the comeback through decisions, preserving the tension of "will they make the right call?"
 
-| System | Artificial Intervention | Effect on Engagement |
-|:---|:---|:---|
-| CoinDuel | Desperation bonus | **-6% GDS** |
-| Education (Goldilocks) | Forced easy questions | Anti-Unbound |
-| Gambling (slots) | Payout asymmetry | 2-5x lower than games |
-| Trading (stop-loss) | Capping downside | +132% GDS (!) |
-
-Wait — trading stop-losses *increase* GDS? Yes, but there's a crucial difference. A stop-loss doesn't soften the blow of losing; it **gives the player agency** to choose when to accept a loss. The player's *decision to stop* is itself a strategic layer that adds depth. Comeback mechanics, by contrast, remove agency — the bonus happens automatically.
-
-**The distinction: agency-adding interventions increase GDS. Consequence-reducing interventions decrease it.**
+CoinDuel's base game already has natural comeback potential — a player who saves coins early can bet big when it matters. That earned comeback creates tension. The desperation bonus removes the need for that decision, and the tension goes with it.
 
 ## Implications for Game Design
 
@@ -81,7 +88,7 @@ The desperation variant gives the losing player extra coins after each lost roun
 
 ## Code
 
-The full model is available in the [anticipation-theory repository](https://github.com/Taru0208/anticipation-theory):
+Both models are available in the [anticipation-theory repository](https://github.com/Taru0208/anticipation-theory):
 
 ```python
 from toa.engine import analyze
@@ -97,8 +104,11 @@ result = analyze(
 print(f"GDS: {result.game_design_score:.3f}")  # 0.404
 ```
 
-All 152 tests pass, including 9 new tests specific to CoinDuel.
+## Limitations
 
----
+This result is tested on two game types: resource management (CoinDuel) and combat (HpGame). Both are symmetric, chance-based, turn-by-turn games. Whether the pattern holds for:
+- **Asymmetric games** (different player roles/abilities)
+- **Information-based games** (hidden information, bluffing)
+- **Spatial games** (board position, movement)
 
-*Next: Taking CoinDuel from mathematical model to playable game. The design is validated — now we build.*
+remains an open question. The structural argument (compressing consequence space reduces A₂) should generalize, but the magnitude and even direction could differ in games where the "comeback mechanic" interacts with strategy space in more complex ways.
