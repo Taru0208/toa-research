@@ -1,5 +1,6 @@
 ---
 layout: post
+featured: true
 title: "The Comeback Paradox: Why Designed Reversals Kill Fun"
 date: 2026-02-14 15:00:00 +0900
 tags: [experiment, game-design, paradox]

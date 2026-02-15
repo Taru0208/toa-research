@@ -1,5 +1,6 @@
 ---
 layout: post
+featured: true
 title: "What is Anticipation Theory?"
 date: 2026-02-12
 tags: [theory, overview]

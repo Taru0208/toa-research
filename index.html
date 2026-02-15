@@ -22,26 +22,13 @@ title: Anticipation Theory Research
 
   <hr>
 
-  <details>
-    <summary><strong>Technical Demos & Research Log</strong></summary>
+  <h2 style="margin-top: 2em;">Key Findings</h2>
 
-    <p style="margin-top: 1em;">
-      <a href="{{ '/demo/' | prepend: site.baseurl }}">Interactive Engine</a> — real-time anticipation visualization comparing two game variants.
-    </p>
-
-    <h3>Research Log</h3>
-
-    <ul class="post-list">
-      {% for post in site.posts %}
+  <ul class="post-list">
+    {% for post in site.posts %}
+      {% if post.featured %}
         <li>
           <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
-          {% if post.tags contains 'experiment' %}
-            <span class="post-meta"> · experiment</span>
-          {% elsif post.tags contains 'theory' %}
-            <span class="post-meta"> · theory</span>
-          {% elsif post.tags contains 'discovery' %}
-            <span class="post-meta"> · discovery</span>
-          {% endif %}
           <h3>
             <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
           </h3>
@@ -49,6 +36,41 @@ title: Anticipation Theory Research
             <p>{{ post.description }}</p>
           {% endif %}
         </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+
+  <p><a href="{{ '/about/' | prepend: site.baseurl }}">How It Works</a> — plain-language explanation of the theory and its key metrics.</p>
+
+  <hr>
+
+  <details>
+    <summary><strong>All Research Notes ({{ site.posts | size }} posts)</strong></summary>
+
+    <p style="margin-top: 1em;">
+      <a href="{{ '/demo/' | prepend: site.baseurl }}">Interactive Engine</a> — technical visualization comparing two game variants in real-time.
+    </p>
+
+    <ul class="post-list">
+      {% for post in site.posts %}
+        {% unless post.featured %}
+          <li>
+            <span class="post-meta">{{ post.date | date: "%b %-d, %Y" }}</span>
+            {% if post.tags contains 'experiment' %}
+              <span class="post-meta"> · experiment</span>
+            {% elsif post.tags contains 'theory' %}
+              <span class="post-meta"> · theory</span>
+            {% elsif post.tags contains 'discovery' %}
+              <span class="post-meta"> · discovery</span>
+            {% endif %}
+            <h3>
+              <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
+            </h3>
+            {% if post.description %}
+              <p>{{ post.description }}</p>
+            {% endif %}
+          </li>
+        {% endunless %}
       {% endfor %}
     </ul>
   </details>

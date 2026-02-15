@@ -1,5 +1,6 @@
 ---
 layout: post
+featured: true
 title: "The Choice Paradox: Why Optimal Play Is Less Fun"
 date: 2026-02-12
 tags: [experiment, discovery]
