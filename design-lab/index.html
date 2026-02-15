@@ -31,7 +31,7 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
   border: 1px solid #1a1e2e;
 }
 .tab {
-  padding: 10px 28px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
+  padding: 10px 34px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;
   color: #607090; transition: all 0.2s; position: relative;
 }
 .tab:hover { color: #8090a8; }
@@ -45,7 +45,8 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
 }
 .tab .tag {
   font-size: 9px; position: absolute; top: 3px; right: 6px;
-  padding: 1px 5px; border-radius: 3px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 .tab .tag-bad { background: #301520; color: #d06060; }
 .tab .tag-good { background: #153020; color: #50c070; }
@@ -159,17 +160,17 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
 </style>
 </head>
 <body>
-<h1>Design Lab</h1>
-<p class="subtitle">Same game, different parameters. Feel the difference.</p>
+<h1>Can Math Make a Game More Fun?</h1>
+<p class="subtitle">Same game, different balance. Play both and feel the difference.</p>
 
 <div class="tab-bar">
   <div class="tab active-before" id="tabBefore" onclick="switchMode('before')">
     Before
-    <span class="tag tag-bad">CPG 0.35</span>
+    <span class="tag tag-bad">defense wins</span>
   </div>
   <div class="tab" id="tabAfter" onclick="switchMode('after')">
     After
-    <span class="tag tag-good">CPG 0.00</span>
+    <span class="tag tag-good">offense wins</span>
   </div>
 </div>
 
@@ -186,36 +187,32 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
 </div>
 
 <div id="comparison">
-  <h3>What changes between Before &amp; After?</h3>
+  <h3>The Problem &amp; The Fix</h3>
   <div class="cmp-grid">
     <div class="cmp-col before">
-      <h4>Before (Standard Design)</h4>
-      <div>Heavy: <span class="metric">2 dmg @ 50%</span></div>
-      <div>Guard counter: <span class="metric">1 dmg</span></div>
-      <div>Guard vs heavy block: <span class="metric">50%</span></div>
+      <h4>Before — "Play it safe to win"</h4>
+      <div>Heavy attack: <span class="metric">2 dmg, 50% hit</span></div>
+      <div>Guard: <span class="metric">blocks + counter 1 dmg</span></div>
       <div style="margin-top:8px">
-        Winning strategy: <span class="highlight-bad">Guard spam</span><br>
-        Fun strategy: Heavy attack<br>
-        <strong>Fun ≠ Winning</strong> → <span class="metric metric-bad">CPG = 0.346</span>
+        Best strategy: <span class="highlight-bad">Guard repeatedly</span><br>
+        Most exciting move: Heavy attack<br>
       </div>
       <div class="rec-banner rec-before">
-        To win, play Guard. But Guard is boring — you're just blocking.<br>
-        The exciting Heavy attack loses more often. You must choose: fun or victory.
+        The safe, boring strategy wins. The exciting, aggressive strategy loses.<br>
+        <strong>You have to choose between having fun and winning.</strong>
       </div>
     </div>
     <div class="cmp-col after">
-      <h4>After (ToA-Optimized Design)</h4>
-      <div>Heavy: <span class="metric">3 dmg @ 70%</span></div>
-      <div>Guard counter: <span class="metric">2 dmg</span></div>
-      <div>Guard vs heavy block: <span class="metric">70%</span></div>
+      <h4>After — "Go aggressive to win"</h4>
+      <div>Heavy attack: <span class="metric">3 dmg, 70% hit</span></div>
+      <div>Guard: <span class="metric">blocks + counter 2 dmg</span></div>
       <div style="margin-top:8px">
-        Winning strategy: <span class="highlight-good">Heavy attack</span><br>
-        Fun strategy: Heavy attack<br>
-        <strong>Fun = Winning</strong> → <span class="metric metric-good">CPG = 0.000</span>
+        Best strategy: <span class="highlight-good">Heavy attack</span><br>
+        Most exciting move: Heavy attack<br>
       </div>
       <div class="rec-banner rec-after">
-        Heavy does massive damage when it lands. Going aggressive IS the best play.<br>
-        No paradox — the exciting choice is also the correct choice.
+        Heavy hits hard and lands often. Going aggressive IS the best play.<br>
+        <strong>The exciting choice is also the winning choice.</strong>
       </div>
     </div>
   </div>
@@ -262,6 +259,20 @@ canvas { display: block; width: 100%; height: auto; border-radius: 8px; }
     </div>
     <div id="verdict" style="margin-top:10px; padding:8px 12px; border-radius:6px; font-size:12px; background:#141828; color:#607090; text-align:center; display:none;">
     </div>
+  </div>
+
+  <div style="margin-top:14px; padding-top:12px; border-top:1px solid #1a2040;">
+    <h3 style="font-size:13px; color:#8098c0; margin-bottom:6px;">How does this work?</h3>
+    <p style="font-size:12px; color:#607090; line-height:1.7; margin:0;">
+      Many games have a hidden problem: the <strong style="color:#c08090;">exciting strategy loses</strong> and the <strong style="color:#c08090;">boring strategy wins</strong>.
+      Players must choose between having fun and winning — a bad trade-off.
+    </p>
+    <p style="font-size:12px; color:#607090; line-height:1.7; margin:6px 0 0;">
+      <a href="https://github.com/akalouis/anticipation-theory" target="_blank" style="color:#6090c0;">Anticipation Theory</a> provides a formula to measure this gap.
+      By adjusting the game's numbers (damage, hit rates, counter damage), we can make the exciting play <em>also</em> the correct play —
+      <strong style="color:#80c090;">eliminating the trade-off entirely</strong>.
+      Both versions above have the same rules and actions. Only the numbers changed.
+    </p>
   </div>
 </div>
 
@@ -883,7 +894,7 @@ function drawWPChart(x, y, w, h) {
 // === MODE INDICATOR ===
 function drawModeIndicator() {
   const label = currentMode === 'before' ? 'BEFORE' : 'AFTER';
-  const sub = currentMode === 'before' ? 'Standard Design — CPG = 0.346' : 'ToA-Optimized — CPG = 0.000';
+  const sub = currentMode === 'before' ? 'Defense wins — fun ≠ winning' : 'Offense wins — fun = winning';
   const color = cfg.accentColor;
 
   ctx.save();
@@ -921,25 +932,28 @@ function draw() {
     titlePulse += 0.03;
     ctx.font = 'bold 30px "Segoe UI", system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.fillStyle = '#c0d0e8';
-    ctx.fillText('Design Lab', W/2, 140);
+    ctx.fillText('Can Math Make a Game More Fun?', W/2, 130);
     ctx.font = '15px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#607090';
-    ctx.fillText('Same rules, different numbers. Feel the difference.', W/2, 170);
+    ctx.fillText('Same game, different balance. Play both versions.', W/2, 158);
+    ctx.font = '13px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#506880';
+    ctx.fillText('In "Before," you have to play defensively to win.', W/2, 185);
+    ctx.fillText('In "After," the exciting aggressive play IS the winning play.', W/2, 202);
     ctx.font = '13px "Segoe UI", system-ui, sans-serif'; ctx.fillStyle = '#405070';
     const paramText = currentMode === 'before'
-      ? 'Before: Heavy 2dmg@50%, Guard counter 1, Block 50%'
-      : 'After: Heavy 3dmg@70%, Guard counter 2, Block 70%';
-    ctx.fillText(paramText, W/2, 200);
+      ? 'Currently: Before — Heavy 2dmg@50%, Guard counter 1'
+      : 'Currently: After — Heavy 3dmg@70%, Guard counter 2';
+    ctx.fillText(paramText, W/2, 228);
 
     const a = 0.5 + Math.sin(titlePulse) * 0.3;
     ctx.globalAlpha = a;
     ctx.font = '14px "Segoe UI", system-ui, sans-serif';
     ctx.fillStyle = cfg.accentColor;
-    ctx.fillText('Press SPACE or click FIGHT', W/2, 250);
+    ctx.fillText('Press SPACE or click FIGHT', W/2, 268);
     ctx.globalAlpha = 1;
 
     ctx.font = '11px "Segoe UI", system-ui, sans-serif';
     ctx.fillStyle = '#354060';
-    ctx.fillText('Press [1] for Before, [2] for After', W/2, 280);
+    ctx.fillText('Press [1] for Before, [2] for After', W/2, 295);
 
     updateStatsDisplay(); return;
   }
@@ -1011,19 +1025,19 @@ function updateComparisonBars() {
 
     let msg = '';
     if (aHR > bHR + 0.05 && aWR > bWR - 0.1) {
-      msg = 'You played more aggressively in After — and it worked! The optimized design rewards bold play.';
+      msg = '💡 You attacked more in "After" — and it paid off. That\'s the point: when aggressive play is rewarded, the game feels better.';
       verdict.style.borderColor = '#205030';
       verdict.style.color = '#80c090';
     } else if (aHR > bHR + 0.05 && aWR < bWR - 0.1) {
-      msg = 'You went aggressive in After but won less. Try a few more games — the math says Heavy is optimal here.';
+      msg = 'You went aggressive in "After" but won less. Try a few more rounds — the numbers favor Heavy attack here.';
       verdict.style.borderColor = '#503020';
       verdict.style.color = '#c09080';
     } else if (bHR > 0.5 && bWR < 0.4) {
-      msg = 'In Before, Heavy play leads to losses — that\'s the Choice Paradox. Guard wins but is boring.';
+      msg = '💡 Notice how attacking in "Before" gets you killed? The safe Guard strategy wins, but it\'s boring. That\'s a design flaw.';
       verdict.style.borderColor = '#402030';
       verdict.style.color = '#c08090';
     } else {
-      msg = `Before: ${(bWR*100).toFixed(0)}% win rate with ${(bHR*100).toFixed(0)}% Heavy. After: ${(aWR*100).toFixed(0)}% win rate with ${(aHR*100).toFixed(0)}% Heavy. Play more to see the pattern emerge.`;
+      msg = `Before: ${(bWR*100).toFixed(0)}% wins, ${(bHR*100).toFixed(0)}% Heavy. After: ${(aWR*100).toFixed(0)}% wins, ${(aHR*100).toFixed(0)}% Heavy. Keep playing to see the pattern.`;
       verdict.style.borderColor = '#1a2040';
       verdict.style.color = '#8090a8';
     }
