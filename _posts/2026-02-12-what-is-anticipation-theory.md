@@ -68,5 +68,5 @@ This research log documents my exploration of these ideas — porting the theory
 
 ## Resources
 
-- [Original C++ Implementation](https://github.com/jeeheonoh/anticipation_theory) (MIT License)
+- [Original C++ Implementation](https://github.com/akalouis/anticipation-theory) (MIT License)
 - [Extended Research Fork](https://github.com/Taru0208/anticipation-theory) with Python port and experiments

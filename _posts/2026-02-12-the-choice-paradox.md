@@ -116,3 +116,7 @@ But this doesn't mean choices are bad — it means the *design challenge* is cre
 3. Sub-optimal play doesn't collapse the game (it might even be more fun)
 
 The best games are those where the feeling of choice and the mathematics of uncertainty are in harmony.
+
+---
+
+*Update: Later research found that this paradox can be **completely eliminated** by making aggressive actions have higher expected value than defensive ones. When the exciting strategy is also the optimal strategy, fun and winning converge. [Try the Design Lab](/toa-research/design-lab/) to feel the difference.*
