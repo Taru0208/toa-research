@@ -129,6 +129,7 @@ Key findings:
 - For **extrinsic variance** games (opponent choices, card drafts), inject randomness into outcome resolution first, then apply the same principle — [93% CPG reduction]({{ '/variance-injection/' | prepend: site.baseurl }})
 - A₁–A₅ cover >99% of GDS for all practical game designs
 - Growth rate classifies games: SNOWBALL (increasing tension), DECAYING (front-loaded), SHALLOW (low depth)
+- **Entropy Preservation**: GDS grows without bound if and only if per-state transition entropy stays above zero. Proven formally for Best-of-N games with closed-form `A₁(a,b) = C(a+b-2, a-1) / 2^{a+b-1}` and a cascade mechanism where each anticipation level's variation feeds the next
 
 ### Resources
 
