@@ -160,6 +160,11 @@ canvas { width: 100% !important; height: 100% !important; }
         <div id="strategyContent"></div>
       </div>
 
+      <div class="panel" id="formulaPanel" style="margin-bottom: 16px; display: none;">
+        <div class="panel-title">Closed-Form Formulas (Best-of-N)</div>
+        <div id="formulaContent" style="font-size: 13px;"></div>
+      </div>
+
       <div class="panel">
         <div class="panel-title">Design Insight</div>
         <div id="insightContent" class="insight">Select a game model and adjust parameters to see analysis.</div>
@@ -602,7 +607,7 @@ const GAME_CONFIGS = {
     hasAgency: false,
   },
   bestofn: {
-    description: 'Best-of-N coin flips. As N increases, anticipation builds across rounds.',
+    description: 'Best-of-N coin flips. As N increases, anticipation builds across rounds. Has exact closed-form formulas for all metrics.',
     params: [
       { id: 'rounds', label: 'Rounds (N)', min: 1, max: 15, value: 5, step: 2 },
     ],
@@ -742,6 +747,14 @@ function runCompute() {
 
   const elapsed = performance.now() - t0;
   displayResults(result, agencyResult, alpha, elapsed);
+
+  // Show formula panel for Best-of-N only
+  if (gameType === 'bestofn') {
+    const n = getParam('rounds', 5);
+    displayFormulas(n);
+  } else {
+    document.getElementById('formulaPanel').style.display = 'none';
+  }
 }
 
 function displayResults(result, agency, alpha, elapsed) {
@@ -914,6 +927,103 @@ function generateInsight(gds, wgds, agency, profile, comp) {
   }
 
   el.innerHTML = insights.join('<br><br>');
+}
+
+
+// ═══════════════════════════════════════════════
+// CLOSED-FORM FORMULAS (Best-of-N)
+// ═══════════════════════════════════════════════
+
+function binom(n, k) {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  if (k > n - k) k = n - k;
+  let r = 1;
+  for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return Math.round(r);
+}
+
+function a1Exact(a, b) {
+  // A₁(a,b) = C(a+b-2, a-1) / 2^{a+b-1}
+  if (a <= 0 || b <= 0) return 0;
+  return binom(a + b - 2, a - 1) / Math.pow(2, a + b - 1);
+}
+
+function a2Exact(a, b) {
+  // A₂(a,b) = |a - b| × A₁(a,b)
+  return Math.abs(a - b) * a1Exact(a, b);
+}
+
+function gExact(a, b) {
+  // G(a,b) = (a+b-1) × A₁(a,b) — expected total future A₁
+  return (a + b - 1) * a1Exact(a, b);
+}
+
+function amBoundary(m, b) {
+  // A_m(1, b) = C(b-1, m-1) / 2^b
+  return binom(b - 1, m - 1) / Math.pow(2, b);
+}
+
+function displayFormulas(n) {
+  const panel = document.getElementById('formulaPanel');
+  const content = document.getElementById('formulaContent');
+
+  const target = Math.ceil(n / 2);
+  // Initial state: both players need target wins → a = target, b = target
+  const a = target, b = target;
+
+  const a1 = a1Exact(a, b);
+  const a2 = a2Exact(a, b);
+  const g = gExact(a, b);
+
+  let html = '';
+  html += `<div style="margin-bottom: 10px; color: var(--text2);">For Best-of-${n} (target = ${target}), initial state (${a}, ${b}):</div>`;
+
+  html += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">';
+
+  html += `<div style="background: var(--surface2); padding: 8px; border-radius: 6px;">
+    <div style="font-size: 11px; color: var(--text2);">A₁ = C(${a+b-2}, ${a-1}) / 2<sup>${a+b-1}</sup></div>
+    <div style="font-family: monospace; font-size: 16px; font-weight: 600; color: var(--accent);">${a1.toFixed(6)}</div>
+    <div style="font-size: 10px; color: var(--text2);">Win probability shift per step</div>
+  </div>`;
+
+  html += `<div style="background: var(--surface2); padding: 8px; border-radius: 6px;">
+    <div style="font-size: 11px; color: var(--text2);">A₂ = |${a} − ${b}| × A₁</div>
+    <div style="font-family: monospace; font-size: 16px; font-weight: 600; color: var(--purple);">${a2.toFixed(6)}</div>
+    <div style="font-size: 10px; color: var(--text2);">Drama asymmetry (0 at tie)</div>
+  </div>`;
+
+  html += `<div style="background: var(--surface2); padding: 8px; border-radius: 6px;">
+    <div style="font-size: 11px; color: var(--text2);">G = (${a+b-1}) × A₁</div>
+    <div style="font-family: monospace; font-size: 16px; font-weight: 600; color: var(--green);">${g.toFixed(6)}</div>
+    <div style="font-size: 10px; color: var(--text2);">Expected total drama ahead</div>
+  </div>`;
+
+  // Win probability
+  const d = binom(2*target - 2, target - 1) / Math.pow(2, 2*target - 1);
+  html += `<div style="background: var(--surface2); padding: 8px; border-radius: 6px;">
+    <div style="font-size: 11px; color: var(--text2);">Win Prob = 0.500</div>
+    <div style="font-family: monospace; font-size: 16px; font-weight: 600; color: var(--orange);">50.0%</div>
+    <div style="font-size: 10px; color: var(--text2);">Fair coin → symmetric</div>
+  </div>`;
+  html += '</div>';
+
+  // Boundary states: show A_m(1, target) = Pascal's triangle
+  if (target >= 2) {
+    html += '<div class="sep"></div>';
+    html += '<div style="font-size: 12px; color: var(--text2); margin-bottom: 6px;"><strong>Boundary State</strong> (1, ' + target + ') — one win away from victory:</div>';
+    html += '<div style="font-family: monospace; font-size: 12px; display: flex; gap: 12px; flex-wrap: wrap;">';
+    const maxM = Math.min(target, 6);
+    for (let m = 1; m <= maxM; m++) {
+      const val = amBoundary(m, target);
+      html += `<span style="color: ${m === 1 ? 'var(--accent)' : m === 2 ? 'var(--purple)' : 'var(--text2)'};">A<sub>${m}</sub> = C(${target-1},${m-1})/2<sup>${target}</sup> = ${val.toFixed(4)}</span>`;
+    }
+    html += '</div>';
+    html += `<div style="font-size: 11px; color: var(--text2); margin-top: 4px;">These form row ${target-1} of Pascal's triangle, divided by 2<sup>${target}</sup>.</div>`;
+  }
+
+  content.innerHTML = html;
+  panel.style.display = '';
 }
 
 
