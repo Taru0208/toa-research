@@ -347,6 +347,13 @@ h1 { font-size: 24px; font-weight: 700; margin: 18px 0 4px; color: #e0e4ec; lett
     <button class="btn-main" onclick="startGame()">Play Again</button>
     <br>
     <button class="btn-secondary" onclick="backToIntro()">Change Difficulty</button>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #1a1e2e; text-align:left; max-width:320px;">
+      <div style="font-size:11px; color:#506080; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Design Insight</div>
+      <div style="font-size:12px; color:#708090; line-height:1.6;">
+        Most games punish bold play — the safe strategy wins. This game was designed so the <span style="color:#60a0e0;">exciting choice is also the optimal one</span>. No trade-off between fun and winning.
+        <a href="../about/" style="color:#506080;">Learn how →</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -709,10 +716,22 @@ function showResult() {
   const favAction = Object.entries(stats.p1Actions).sort((a, b) => b[1] - a[1])[0];
   const favName = favAction ? ACTIONS[favAction[0]]?.label || 'None' : 'None';
 
+  // Strategy insight based on player behavior
+  const pushPct = totalP1 > 0 ? Math.round((stats.p1Actions.push / totalP1) * 100) : 0;
+  const safePct = totalP1 > 0 ? Math.round((stats.p1Actions.safe / totalP1) * 100) : 0;
+
+  let insight = '';
+  if (pushPct >= 50) {
+    insight = '<br><span style="color:#60a0e0;">You played aggressively — in this game, that\'s the mathematically optimal strategy. Push has the best return per energy (0.55 EV/E).</span>';
+  } else if (safePct >= 50) {
+    insight = '<br><span style="color:#e09050;">You played it safe a lot. In most games, that\'s smart — but this game is designed so the bold choice (Push) actually wins more efficiently.</span>';
+  }
+
   statsEl.innerHTML = `
     Rounds played: ${stats.rounds}<br>
     Your hit rate: ${hitRate}% (${stats.p1Hits}/${totalP1})<br>
-    Most used: ${favName}
+    Most used: ${favName} · Push rate: ${pushPct}%
+    ${insight}
   `;
 
   overlay.classList.add('visible');
