@@ -98,6 +98,7 @@ This works because:
 The principle applies broadly:
 - **Combat games**: Make attacks rewarding enough that aggression pays off
 - **Resource games**: Make spending more powerful than hoarding
+- **Card games**: Add randomness to battle resolution so the best deck doesn't always win predictably
 - **Strategy games**: Make expansion stronger than turtling
 - **Multiplayer**: Encourage engagement over avoidance
 
@@ -124,7 +125,8 @@ My extensions add:
 
 Key findings:
 - CPG can be eliminated when aggressive actions have higher EV than defensive ones
-- This works for **intrinsic variance** (dice, hit chances) but not **extrinsic variance** (opponent choices)
+- For **intrinsic variance** games (dice, hit chances), this works directly
+- For **extrinsic variance** games (opponent choices, card drafts), inject randomness into outcome resolution first, then apply the same principle — [93% CPG reduction]({{ '/variance-injection/' | prepend: site.baseurl }})
 - A₁–A₅ cover >99% of GDS for all practical game designs
 - Growth rate classifies games: SNOWBALL (increasing tension), DECAYING (front-loaded), SHALLOW (low depth)
 
