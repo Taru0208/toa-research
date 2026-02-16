@@ -7,6 +7,15 @@ layout: null
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ToA Calculator — Game Design Analysis</title>
+<meta name="description" content="Analyze game tension, player agency, and fun alignment with real-time metrics. Test 5 game models including coin flips, HP combat, and tactical combat.">
+<meta property="og:title" content="ToA Calculator — Game Design Analysis">
+<meta property="og:description" content="Real-time game design analysis tool. Compute GDS, policy impact, and fun alignment across 5 game models.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://taru0208.github.io/toa-research/calculator/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ToA Calculator — Game Design Analysis">
+<meta name="twitter:description" content="Real-time game design analysis tool. Compute tension, agency, and fun alignment across 5 game models.">
+<link rel="canonical" href="https://taru0208.github.io/toa-research/calculator/">
 <style>
 :root {
   --bg: #0d1117; --surface: #161b22; --surface2: #21262d;
@@ -83,7 +92,9 @@ canvas { width: 100% !important; height: 100% !important; }
 <div class="container">
   <a href="{{ '/' | relative_url }}" class="back">&larr; Back to home</a>
   <h1>Game Design Calculator</h1>
-  <p class="subtitle">Analyze your game's tension, agency, and fun alignment using ToA metrics.</p>
+  <p class="subtitle">Analyze your game's tension, agency, and fun alignment using ToA metrics.
+    <button id="shareBtn" onclick="copyShareLink()" style="margin-left: 12px; padding: 3px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--accent); cursor: pointer; font-size: 12px;">Share Link</button>
+  </p>
 
   <div class="grid">
     <!-- Left Panel: Controls -->
@@ -907,10 +918,120 @@ function generateInsight(gds, wgds, agency, profile, comp) {
 
 
 // ═══════════════════════════════════════════════
+// URL STATE SHARING
+// ═══════════════════════════════════════════════
+
+function encodeState() {
+  const gameType = document.getElementById('gameSelect').value;
+  const nestLevel = document.getElementById('nestLevel').value;
+  const alpha = document.getElementById('alpha').value;
+  const cfg = GAME_CONFIGS[gameType];
+
+  const parts = [gameType, nestLevel, alpha];
+  for (const p of cfg.params) {
+    const el = document.getElementById('param_' + p.id);
+    if (el) parts.push(p.id + '=' + el.value);
+  }
+  return parts.join(',');
+}
+
+function decodeState(hash) {
+  if (!hash || hash.length < 2) return false;
+  const str = hash.startsWith('#') ? hash.slice(1) : hash;
+  const parts = str.split(',');
+  if (parts.length < 3) return false;
+
+  const [gameType, nestLevel, alpha, ...paramParts] = parts;
+  if (!GAME_CONFIGS[gameType]) return false;
+
+  document.getElementById('gameSelect').value = gameType;
+  document.getElementById('nestLevel').value = nestLevel;
+  document.getElementById('nestLevel').dispatchEvent(new Event('input'));
+  document.getElementById('alpha').value = alpha;
+  document.getElementById('alpha').dispatchEvent(new Event('input'));
+
+  // Trigger game change to build param UI
+  const cfg = GAME_CONFIGS[gameType];
+  document.getElementById('gameDescription').textContent = cfg.description;
+  const container = document.getElementById('paramsContainer');
+  container.innerHTML = '';
+  for (const p of cfg.params) {
+    const dec = p.decimals || 0;
+    const div = document.createElement('div');
+    div.className = 'control-group';
+    div.innerHTML = `
+      <div class="control-label"><span>${p.label}</span><span id="param_${p.id}_val">${Number(p.value).toFixed(dec)}</span></div>
+      <input type="range" id="param_${p.id}" min="${p.min}" max="${p.max}" value="${p.value}" step="${p.step}"
+        oninput="document.getElementById('param_${p.id}_val').textContent = Number(this.value).toFixed(${dec}); scheduleCompute()">
+    `;
+    container.appendChild(div);
+  }
+
+  document.getElementById('strategyPanel').style.display = cfg.hasAgency ? '' : 'none';
+  const piCard = document.getElementById('mPI').parentElement;
+  const cpgCard = document.getElementById('mCPG').parentElement;
+  const cfsCard = document.getElementById('mCFS').parentElement;
+  piCard.style.display = cfg.hasAgency ? '' : 'none';
+  cpgCard.style.display = cfg.hasAgency ? '' : 'none';
+  cfsCard.style.display = cfg.hasAgency ? '' : 'none';
+
+  // Set param values from URL
+  for (const pp of paramParts) {
+    const [id, val] = pp.split('=');
+    if (!id || !val) continue;
+    const el = document.getElementById('param_' + id);
+    if (el) {
+      el.value = val;
+      const valEl = document.getElementById('param_' + id + '_val');
+      if (valEl) {
+        const p = cfg.params.find(cp => cp.id === id);
+        valEl.textContent = Number(val).toFixed(p?.decimals || 0);
+      }
+    }
+  }
+
+  return true;
+}
+
+function updateURL() {
+  const encoded = encodeState();
+  history.replaceState(null, '', '#' + encoded);
+}
+
+function copyShareLink() {
+  const url = window.location.href.split('#')[0] + '#' + encodeState();
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('shareBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  }).catch(() => {
+    prompt('Copy this URL:', url);
+  });
+}
+
+// Override scheduleCompute to also update URL
+const _origScheduleCompute = scheduleCompute;
+function scheduleComputeWithURL() {
+  if (computeTimeout) clearTimeout(computeTimeout);
+  computeTimeout = setTimeout(() => {
+    runCompute();
+    updateURL();
+  }, 150);
+}
+// Rebind
+scheduleCompute = scheduleComputeWithURL;
+
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 
-onGameChange();
+if (!decodeState(window.location.hash)) {
+  onGameChange();
+} else {
+  scheduleCompute();
+}
 </script>
 </body>
 </html>
