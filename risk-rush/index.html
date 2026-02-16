@@ -1,0 +1,740 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Risk Rush — A ToA-Optimized Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #080a12;
+  color: #c8ccd4;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+h1 { font-size: 24px; font-weight: 700; margin: 18px 0 4px; color: #e0e4ec; letter-spacing: -0.5px; }
+.subtitle { font-size: 13px; color: #607090; margin-bottom: 14px; }
+
+/* Layout */
+.game-wrap {
+  width: 420px; max-width: 95vw; display: flex; flex-direction: column; align-items: center;
+}
+
+/* Score bar */
+.score-bar {
+  display: flex; justify-content: space-between; align-items: center; width: 100%;
+  padding: 10px 16px; margin-bottom: 8px;
+  background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 10px;
+}
+.player-info { text-align: center; flex: 1; }
+.player-label { font-size: 11px; color: #506080; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+.player-score { font-size: 36px; font-weight: 800; }
+.p1-score { color: #5090e0; }
+.p2-score { color: #e05050; }
+.vs-label { font-size: 14px; color: #303850; font-weight: 700; padding: 0 12px; }
+
+/* Energy bar */
+.energy-section {
+  display: flex; justify-content: space-between; width: 100%; margin-bottom: 10px; gap: 8px;
+}
+.energy-bar-wrap {
+  flex: 1; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 8px; padding: 8px 12px;
+}
+.energy-label { font-size: 10px; color: #506080; text-transform: uppercase; letter-spacing: 0.5px; }
+.energy-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.energy-track {
+  flex: 1; height: 8px; background: #151828; border-radius: 4px; overflow: hidden;
+}
+.energy-fill {
+  height: 100%; border-radius: 4px; transition: width 0.4s ease;
+}
+.energy-fill.p1 { background: linear-gradient(90deg, #2060a0, #40a0f0); }
+.energy-fill.p2 { background: linear-gradient(90deg, #a02020, #f04040); }
+.energy-num { font-size: 14px; font-weight: 700; min-width: 28px; text-align: right; }
+.energy-num.p1 { color: #5090e0; }
+.energy-num.p2 { color: #e05050; }
+
+/* Round info */
+.round-info {
+  text-align: center; font-size: 12px; color: #607090; margin-bottom: 10px;
+}
+.round-num { color: #8090a8; font-weight: 600; }
+
+/* Action log */
+.action-log {
+  width: 100%; min-height: 64px; max-height: 120px; overflow-y: auto;
+  background: #0a0c16; border: 1px solid #151828; border-radius: 8px;
+  padding: 10px 14px; margin-bottom: 10px; font-size: 13px; line-height: 1.6;
+  color: #708090;
+}
+.action-log .log-entry { margin-bottom: 2px; }
+.log-you { color: #5090e0; font-weight: 600; }
+.log-opp { color: #e05050; font-weight: 600; }
+.log-result { color: #c0c8d4; }
+.log-hit { color: #50d080; }
+.log-miss { color: #e06060; }
+.log-system { color: #607090; font-style: italic; }
+
+/* Action buttons */
+.actions {
+  display: flex; gap: 8px; width: 100%; margin-bottom: 10px;
+}
+.action-btn {
+  flex: 1; padding: 14px 8px; border-radius: 10px; cursor: pointer;
+  text-align: center; transition: all 0.15s; border: 2px solid;
+  background: linear-gradient(180deg, #12162a 0%, #0c0e1a 100%);
+  position: relative;
+}
+.action-btn:hover:not(.disabled) { transform: translateY(-2px); }
+.action-btn:active:not(.disabled) { transform: translateY(1px); }
+.action-btn.disabled { opacity: 0.25; cursor: default; pointer-events: none; }
+.action-btn .act-name { font-size: 16px; font-weight: 700; display: block; margin-bottom: 4px; }
+.action-btn .act-detail { font-size: 10px; color: #506080; display: block; line-height: 1.3; }
+.action-btn .act-cost { font-size: 11px; font-weight: 600; display: block; margin-top: 3px; }
+.action-btn .act-tag {
+  position: absolute; top: -8px; right: 8px; font-size: 9px; padding: 2px 6px;
+  border-radius: 4px; font-weight: 700; letter-spacing: 0.5px;
+}
+
+/* Safe */
+.btn-safe { border-color: #2a5040; }
+.btn-safe:hover:not(.disabled) { border-color: #40a070; box-shadow: 0 0 14px rgba(64,160,112,0.25); }
+.btn-safe .act-name { color: #50c080; }
+.btn-safe .act-cost { color: #408060; }
+
+/* Push */
+.btn-push { border-color: #2a4060; }
+.btn-push:hover:not(.disabled) { border-color: #4090e0; box-shadow: 0 0 14px rgba(64,144,224,0.25); }
+.btn-push .act-name { color: #60a0e0; }
+.btn-push .act-cost { color: #4080b0; }
+.btn-push .act-tag { background: #1a3060; color: #60a0e0; }
+
+/* All-In */
+.btn-allin { border-color: #503020; }
+.btn-allin:hover:not(.disabled) { border-color: #e08040; box-shadow: 0 0 14px rgba(224,128,64,0.25); }
+.btn-allin .act-name { color: #e09050; }
+.btn-allin .act-cost { color: #a06030; }
+
+/* Result overlay */
+.result-overlay {
+  position: fixed; inset: 0; background: rgba(4,6,10,0.92);
+  display: none; justify-content: center; align-items: center; z-index: 100;
+  flex-direction: column;
+}
+.result-overlay.visible { display: flex; }
+.result-box {
+  text-align: center; padding: 40px 50px; border-radius: 16px;
+  background: #0c0e18; border: 1px solid #1a2040;
+}
+.result-text { font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+.result-sub { font-size: 14px; color: #607090; margin-bottom: 20px; }
+.result-stats { font-size: 12px; color: #506080; margin-bottom: 20px; line-height: 1.8; }
+.result-win { color: #50d080; }
+.result-lose { color: #e05050; }
+.result-draw { color: #e0c050; }
+
+/* Buttons */
+.btn-main {
+  background: linear-gradient(180deg, #1a3060 0%, #102040 100%);
+  border: 2px solid #3070c0; color: #c8ccd4;
+  padding: 12px 32px; border-radius: 8px; font-size: 15px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-main:hover { border-color: #5090e0; box-shadow: 0 0 16px rgba(48,112,192,0.3); transform: translateY(-1px); }
+.btn-secondary {
+  background: transparent; border: 1px solid #2a3050; color: #607090;
+  padding: 10px 24px; border-radius: 8px; font-size: 13px; cursor: pointer;
+  transition: all 0.15s; margin-top: 8px;
+}
+.btn-secondary:hover { border-color: #4a5580; color: #8090a8; }
+
+/* Intro screen */
+.intro {
+  text-align: center; padding: 20px 0;
+}
+.intro p { font-size: 14px; color: #708090; line-height: 1.7; margin-bottom: 12px; max-width: 360px; }
+.intro .rule-table {
+  width: 100%; margin: 14px 0; border-collapse: collapse; font-size: 13px;
+}
+.intro .rule-table th {
+  font-size: 10px; color: #506080; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 6px 8px; border-bottom: 1px solid #1a1e2e; font-weight: 600;
+}
+.intro .rule-table td {
+  padding: 8px; border-bottom: 1px solid #101420; color: #8090a8;
+}
+.intro .rule-table .best-row td { color: #60a0e0; font-weight: 600; }
+.intro .rule-table .ev-col { color: #50c080; font-weight: 600; }
+
+/* Back link */
+.back-link {
+  margin-top: 16px; font-size: 12px;
+}
+.back-link a { color: #506080; text-decoration: none; }
+.back-link a:hover { color: #8090a8; }
+
+/* Toast notification */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #1a2040; border: 1px solid #304070; color: #c8ccd4;
+  padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 200;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* Difficulty selector */
+.diff-select {
+  display: flex; gap: 6px; margin: 12px 0 16px;
+}
+.diff-btn {
+  padding: 8px 18px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;
+  background: #0c0e18; border: 1px solid #1a1e2e; color: #607090; transition: all 0.15s;
+}
+.diff-btn:hover { border-color: #3a4060; color: #8090a8; }
+.diff-btn.active { border-color: #3070c0; color: #60a0e0; background: #10182e; }
+
+/* Anticipation meter */
+.anticipation-section {
+  width: 100%; margin-bottom: 10px;
+}
+.ant-label { font-size: 10px; color: #506080; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.ant-bar-track {
+  width: 100%; height: 6px; background: #151828; border-radius: 3px; overflow: hidden;
+}
+.ant-bar-fill {
+  height: 100%; border-radius: 3px; transition: width 0.5s ease;
+  background: linear-gradient(90deg, #204060, #4090e0, #60c0f0);
+}
+
+/* Win probability */
+.winprob-section {
+  display: flex; justify-content: space-between; width: 100%; margin-bottom: 6px;
+  font-size: 11px; color: #506080;
+}
+.winprob-bar-track {
+  width: 100%; height: 4px; background: #151828; border-radius: 2px; overflow: hidden;
+  margin-bottom: 10px; display: flex;
+}
+.winprob-p1 { height: 100%; background: #3070c0; transition: width 0.5s ease; }
+.winprob-p2 { height: 100%; background: #c03030; transition: width 0.5s ease; }
+
+@media (max-width: 440px) {
+  .game-wrap { width: 100%; }
+  .action-btn .act-name { font-size: 14px; }
+  .player-score { font-size: 28px; }
+}
+</style>
+</head>
+<body>
+
+<h1>Risk Rush</h1>
+<div class="subtitle">aggressive play wins — a ToA-designed game</div>
+
+<div class="game-wrap">
+  <!-- Intro Screen -->
+  <div id="introScreen" class="intro">
+    <p>Choose your risk level each round. Higher risk = higher reward, but you might miss. First to <strong>5 points</strong> wins.</p>
+    <p style="color:#60a0e0; font-size:13px;">The bold strategy is the winning strategy.</p>
+
+    <table class="rule-table">
+      <tr><th>Action</th><th>Cost</th><th>Reward</th><th>Chance</th><th class="ev-col">EV/Energy</th></tr>
+      <tr><td>Safe</td><td>1E</td><td>+1 pt</td><td>40%</td><td>0.40</td></tr>
+      <tr class="best-row"><td>Push</td><td>2E</td><td>+2 pts</td><td>55%</td><td class="ev-col">0.55 ★</td></tr>
+      <tr><td>All-In</td><td>4E</td><td>+4 pts</td><td>45%</td><td>0.45</td></tr>
+    </table>
+
+    <p style="font-size:12px; color:#506080;">Energy recovers +1 each round. Run out → skip a turn.</p>
+
+    <div class="diff-select">
+      <button class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">Easy</button>
+      <button class="diff-btn" data-diff="normal" onclick="setDifficulty('normal')">Normal</button>
+      <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">Hard</button>
+    </div>
+
+    <button class="btn-main" onclick="startGame()">Play</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="gameScreen" style="display:none; width:100%;">
+    <div class="score-bar">
+      <div class="player-info">
+        <div class="player-label">You</div>
+        <div class="player-score p1-score" id="p1Score">0</div>
+      </div>
+      <div class="vs-label">VS</div>
+      <div class="player-info">
+        <div class="player-label" id="oppLabel">Opponent</div>
+        <div class="player-score p2-score" id="p2Score">0</div>
+      </div>
+    </div>
+
+    <div class="energy-section">
+      <div class="energy-bar-wrap">
+        <div class="energy-label">Your Energy</div>
+        <div class="energy-row">
+          <div class="energy-track"><div class="energy-fill p1" id="p1Energy"></div></div>
+          <span class="energy-num p1" id="p1EnergyNum">10</span>
+        </div>
+      </div>
+      <div class="energy-bar-wrap">
+        <div class="energy-label">Opponent Energy</div>
+        <div class="energy-row">
+          <div class="energy-track"><div class="energy-fill p2" id="p2Energy"></div></div>
+          <span class="energy-num p2" id="p2EnergyNum">10</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Win probability bar -->
+    <div class="winprob-section">
+      <span id="wpLabelP1">50%</span>
+      <span style="color:#303850;">win probability</span>
+      <span id="wpLabelP2">50%</span>
+    </div>
+    <div class="winprob-bar-track">
+      <div class="winprob-p1" id="wpBarP1" style="width:50%;"></div>
+      <div class="winprob-p2" id="wpBarP2" style="width:50%;"></div>
+    </div>
+
+    <!-- Anticipation meter -->
+    <div class="anticipation-section">
+      <div class="ant-label">Tension (how much this round matters)</div>
+      <div class="ant-bar-track"><div class="ant-bar-fill" id="antBar" style="width:50%;"></div></div>
+    </div>
+
+    <div class="round-info">Round <span class="round-num" id="roundNum">1</span></div>
+
+    <div class="action-log" id="actionLog">
+      <div class="log-entry log-system">Choose your action...</div>
+    </div>
+
+    <div class="actions" id="actionBtns">
+      <div class="action-btn btn-safe" onclick="playAction('safe')" id="btnSafe">
+        <span class="act-name">Safe</span>
+        <span class="act-detail">40% → +1 pt</span>
+        <span class="act-cost">1 Energy</span>
+      </div>
+      <div class="action-btn btn-push" onclick="playAction('push')" id="btnPush">
+        <span class="act-tag">BEST EV</span>
+        <span class="act-name">Push</span>
+        <span class="act-detail">55% → +2 pts</span>
+        <span class="act-cost">2 Energy</span>
+      </div>
+      <div class="action-btn btn-allin" onclick="playAction('allin')" id="btnAllIn">
+        <span class="act-name">All-In</span>
+        <span class="act-detail">45% → +4 pts</span>
+        <span class="act-cost">4 Energy</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result overlay -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-box">
+    <div class="result-text" id="resultText"></div>
+    <div class="result-sub" id="resultSub"></div>
+    <div class="result-stats" id="resultStats"></div>
+    <button class="btn-main" onclick="startGame()">Play Again</button>
+    <br>
+    <button class="btn-secondary" onclick="backToIntro()">Change Difficulty</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="back-link">
+  <a href="../">← back to research</a>
+</div>
+
+<script>
+// ==================== GAME CONFIG ====================
+
+const GOAL = 5;
+const START_ENERGY = 10;
+const MAX_ENERGY = 12;
+const RECOVERY = 1;
+
+const ACTIONS = {
+  safe:  { cost: 1, gain: 1, prob: 0.40, label: 'Safe' },
+  push:  { cost: 2, gain: 2, prob: 0.55, label: 'Push' },
+  allin: { cost: 4, gain: 4, prob: 0.45, label: 'All-In' }
+};
+
+// ==================== GAME STATE ====================
+
+let state = {};
+let difficulty = 'easy';
+let gameActive = false;
+let stats = { rounds: 0, p1Actions: {}, p2Actions: {}, p1Hits: 0, p1Misses: 0 };
+
+function initState() {
+  state = {
+    p1Score: 0, p2Score: 0,
+    p1Energy: START_ENERGY, p2Energy: START_ENERGY,
+    round: 1
+  };
+  stats = { rounds: 0, p1Actions: {safe:0,push:0,allin:0}, p2Actions: {safe:0,push:0,allin:0}, p1Hits: 0, p1Misses: 0 };
+}
+
+// ==================== AI OPPONENT ====================
+
+function aiChoose(energy, score, oppScore) {
+  const avail = Object.entries(ACTIONS).filter(([,a]) => energy >= a.cost);
+  if (avail.length === 0) return null;
+
+  if (difficulty === 'easy') {
+    // Uniform random among available
+    return avail[Math.floor(Math.random() * avail.length)][0];
+  }
+
+  if (difficulty === 'normal') {
+    // Prefer Push (optimal), occasional Safe/All-In
+    const weights = {};
+    for (const [name] of avail) {
+      if (name === 'push') weights[name] = 5;
+      else if (name === 'safe') weights[name] = 2;
+      else weights[name] = 2;
+    }
+    return weightedPick(avail.map(([n]) => n), avail.map(([n]) => weights[n]));
+  }
+
+  // Hard: strategic
+  const gap = score - oppScore;
+  const remaining = GOAL - score;
+
+  // If can win with All-In, always do it
+  if (energy >= 4 && remaining <= 4) {
+    return 'allin';
+  }
+
+  // If behind, push harder
+  if (gap < -1 && energy >= 4) {
+    return Math.random() < 0.5 ? 'allin' : 'push';
+  }
+
+  // Low energy → safe
+  if (energy <= 2) {
+    return energy >= 1 ? 'safe' : null;
+  }
+
+  // Default: mostly push (optimal)
+  const r = Math.random();
+  if (energy >= 4 && r < 0.15) return 'allin';
+  if (energy >= 2 && r < 0.85) return 'push';
+  return 'safe';
+}
+
+function weightedPick(items, weights) {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return items[i];
+  }
+  return items[items.length - 1];
+}
+
+// ==================== GAME LOGIC ====================
+
+function setDifficulty(d) {
+  difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.diff === d);
+  });
+}
+
+function startGame() {
+  initState();
+  gameActive = true;
+  document.getElementById('introScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = '';
+  document.getElementById('resultOverlay').classList.remove('visible');
+
+  const labels = { easy: 'Easy Bot', normal: 'Normal Bot', hard: 'Hard Bot' };
+  document.getElementById('oppLabel').textContent = labels[difficulty];
+
+  updateUI();
+  clearLog();
+  addLog('system', 'Round 1 — choose your action.');
+}
+
+function backToIntro() {
+  document.getElementById('introScreen').style.display = '';
+  document.getElementById('gameScreen').style.display = 'none';
+  document.getElementById('resultOverlay').classList.remove('visible');
+  gameActive = false;
+}
+
+function playAction(actionName) {
+  if (!gameActive) return;
+
+  const p1Act = ACTIONS[actionName];
+  if (!p1Act || state.p1Energy < p1Act.cost) return;
+
+  // Disable buttons during resolution
+  gameActive = false;
+
+  // AI choose
+  const p2Name = aiChoose(state.p2Energy, state.p2Score, state.p1Score);
+
+  // Resolve
+  const p1Hit = Math.random() < p1Act.prob;
+  let p2Hit = false;
+  let p2Act = null;
+
+  if (p2Name) {
+    p2Act = ACTIONS[p2Name];
+    p2Hit = Math.random() < p2Act.prob;
+  }
+
+  // Apply costs
+  state.p1Energy -= p1Act.cost;
+  if (p2Act) state.p2Energy -= p2Act.cost;
+
+  // Apply gains
+  if (p1Hit) state.p1Score += p1Act.gain;
+  if (p2Hit && p2Act) state.p2Score += p2Act.gain;
+
+  // Recovery
+  state.p1Energy = Math.min(state.p1Energy + RECOVERY, MAX_ENERGY);
+  state.p2Energy = Math.min(state.p2Energy + RECOVERY, MAX_ENERGY);
+
+  // Stats
+  stats.rounds++;
+  stats.p1Actions[actionName]++;
+  if (p2Name) stats.p2Actions[p2Name]++;
+  if (p1Hit) stats.p1Hits++;
+  else stats.p1Misses++;
+
+  // Log
+  const p1Result = p1Hit
+    ? `<span class="log-hit">HIT +${p1Act.gain}pt</span>`
+    : `<span class="log-miss">MISS</span>`;
+  const p2Label = p2Name ? ACTIONS[p2Name].label : 'Skip';
+  const p2Result = p2Name
+    ? (p2Hit ? `<span class="log-hit">HIT +${p2Act.gain}pt</span>` : `<span class="log-miss">MISS</span>`)
+    : '<span class="log-miss">no energy</span>';
+
+  addLog('round',
+    `<span class="log-you">You</span> ${p1Act.label} → ${p1Result} &nbsp;|&nbsp; ` +
+    `<span class="log-opp">AI</span> ${p2Label} → ${p2Result}`
+  );
+
+  state.round++;
+
+  // Animate UI update
+  setTimeout(() => {
+    updateUI();
+
+    // Check win
+    if (state.p1Score >= GOAL || state.p2Score >= GOAL) {
+      setTimeout(() => showResult(), 400);
+      return;
+    }
+
+    // Check energy skip
+    if (state.p1Energy < 1) {
+      addLog('system', 'No energy! Skipping your turn...');
+      // Auto-skip: only AI acts
+      setTimeout(() => autoSkipTurn(), 800);
+      return;
+    }
+
+    gameActive = true;
+    addLog('system', `Round ${state.round} — choose your action.`);
+  }, 300);
+}
+
+function autoSkipTurn() {
+  // Player has no energy, AI acts alone
+  const p2Name = aiChoose(state.p2Energy, state.p2Score, state.p1Score);
+  let p2Hit = false;
+  let p2Act = null;
+
+  if (p2Name) {
+    p2Act = ACTIONS[p2Name];
+    p2Hit = Math.random() < p2Act.prob;
+    state.p2Energy -= p2Act.cost;
+    if (p2Hit) state.p2Score += p2Act.gain;
+    stats.p2Actions[p2Name]++;
+  }
+
+  state.p1Energy = Math.min(state.p1Energy + RECOVERY, MAX_ENERGY);
+  state.p2Energy = Math.min(state.p2Energy + RECOVERY, MAX_ENERGY);
+  stats.rounds++;
+
+  const p2Label = p2Name ? ACTIONS[p2Name].label : 'Skip';
+  const p2Result = p2Name
+    ? (p2Hit ? `<span class="log-hit">HIT +${p2Act.gain}pt</span>` : `<span class="log-miss">MISS</span>`)
+    : '<span class="log-miss">no energy</span>';
+
+  addLog('round',
+    `<span class="log-you">You</span> Skip &nbsp;|&nbsp; <span class="log-opp">AI</span> ${p2Label} → ${p2Result}`
+  );
+
+  state.round++;
+
+  setTimeout(() => {
+    updateUI();
+    if (state.p2Score >= GOAL) {
+      setTimeout(() => showResult(), 400);
+      return;
+    }
+    if (state.p1Energy < 1) {
+      addLog('system', 'Still no energy! Skipping again...');
+      setTimeout(() => autoSkipTurn(), 800);
+      return;
+    }
+    gameActive = true;
+    addLog('system', `Round ${state.round} — choose your action.`);
+  }, 300);
+}
+
+// ==================== WIN PROBABILITY (simplified) ====================
+
+function estimateWinProb(s1, s2, e1, e2) {
+  // Simple heuristic: based on score gap and energy
+  const scoreProgress1 = s1 / GOAL;
+  const scoreProgress2 = s2 / GOAL;
+  const energyAdv = (e1 - e2) / (MAX_ENERGY * 2);
+
+  // Logistic function centered at 0.5
+  const x = (scoreProgress1 - scoreProgress2) * 3 + energyAdv;
+  return 1 / (1 + Math.exp(-x * 2.5));
+}
+
+function estimateTension(s1, s2, e1, e2) {
+  // Tension is highest when scores are close and both near the goal
+  const closeness = 1 - Math.abs(s1 - s2) / GOAL;
+  const progress = Math.max(s1, s2) / GOAL;
+  const base = closeness * 0.6 + progress * 0.4;
+  // Also high when one big move could end it
+  const nearEnd = (GOAL - s1 <= 4 || GOAL - s2 <= 4) ? 0.2 : 0;
+  return Math.min(1, base + nearEnd);
+}
+
+// ==================== UI ====================
+
+function updateUI() {
+  document.getElementById('p1Score').textContent = state.p1Score;
+  document.getElementById('p2Score').textContent = state.p2Score;
+
+  const e1Pct = (state.p1Energy / MAX_ENERGY) * 100;
+  const e2Pct = (state.p2Energy / MAX_ENERGY) * 100;
+  document.getElementById('p1Energy').style.width = e1Pct + '%';
+  document.getElementById('p2Energy').style.width = e2Pct + '%';
+  document.getElementById('p1EnergyNum').textContent = state.p1Energy;
+  document.getElementById('p2EnergyNum').textContent = state.p2Energy;
+
+  document.getElementById('roundNum').textContent = state.round;
+
+  // Update button states
+  document.getElementById('btnSafe').classList.toggle('disabled', state.p1Energy < 1);
+  document.getElementById('btnPush').classList.toggle('disabled', state.p1Energy < 2);
+  document.getElementById('btnAllIn').classList.toggle('disabled', state.p1Energy < 4);
+
+  // Win probability
+  const wp = estimateWinProb(state.p1Score, state.p2Score, state.p1Energy, state.p2Energy);
+  const wp1 = Math.round(wp * 100);
+  const wp2 = 100 - wp1;
+  document.getElementById('wpLabelP1').textContent = wp1 + '%';
+  document.getElementById('wpLabelP2').textContent = wp2 + '%';
+  document.getElementById('wpBarP1').style.width = wp1 + '%';
+  document.getElementById('wpBarP2').style.width = wp2 + '%';
+
+  // Tension
+  const tension = estimateTension(state.p1Score, state.p2Score, state.p1Energy, state.p2Energy);
+  document.getElementById('antBar').style.width = Math.round(tension * 100) + '%';
+
+  // Score pop animation
+  animatePop('p1Score');
+  animatePop('p2Score');
+}
+
+function animatePop(id) {
+  const el = document.getElementById(id);
+  el.style.transform = 'scale(1.15)';
+  el.style.transition = 'transform 0.15s ease';
+  setTimeout(() => {
+    el.style.transform = 'scale(1)';
+  }, 150);
+}
+
+function clearLog() {
+  document.getElementById('actionLog').innerHTML = '';
+}
+
+function addLog(type, html) {
+  const log = document.getElementById('actionLog');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  if (type === 'system') entry.innerHTML = '<span class="log-system">' + html + '</span>';
+  else entry.innerHTML = html;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+}
+
+function showResult() {
+  const overlay = document.getElementById('resultOverlay');
+  const text = document.getElementById('resultText');
+  const sub = document.getElementById('resultSub');
+  const statsEl = document.getElementById('resultStats');
+
+  let resultClass, resultLabel, resultMsg;
+  if (state.p1Score >= GOAL && state.p2Score >= GOAL) {
+    resultClass = 'result-draw'; resultLabel = 'Draw!'; resultMsg = 'Both reached the goal simultaneously.';
+  } else if (state.p1Score >= GOAL) {
+    resultClass = 'result-win'; resultLabel = 'You Win!'; resultMsg = 'Aggressive play pays off.';
+  } else {
+    resultClass = 'result-lose'; resultLabel = 'You Lose'; resultMsg = 'Try a bolder strategy next time.';
+  }
+
+  text.className = 'result-text ' + resultClass;
+  text.textContent = resultLabel;
+  sub.textContent = resultMsg;
+
+  const totalP1 = stats.p1Hits + stats.p1Misses;
+  const hitRate = totalP1 > 0 ? Math.round((stats.p1Hits / totalP1) * 100) : 0;
+
+  const favAction = Object.entries(stats.p1Actions).sort((a, b) => b[1] - a[1])[0];
+  const favName = favAction ? ACTIONS[favAction[0]]?.label || 'None' : 'None';
+
+  statsEl.innerHTML = `
+    Rounds played: ${stats.rounds}<br>
+    Your hit rate: ${hitRate}% (${stats.p1Hits}/${totalP1})<br>
+    Most used: ${favName}
+  `;
+
+  overlay.classList.add('visible');
+  gameActive = false;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ==================== KEYBOARD ====================
+
+document.addEventListener('keydown', (e) => {
+  if (!gameActive) return;
+  if (e.key === '1' || e.key === 'q') playAction('safe');
+  if (e.key === '2' || e.key === 'w') playAction('push');
+  if (e.key === '3' || e.key === 'e') playAction('allin');
+});
+</script>
+
+</body>
+</html>
