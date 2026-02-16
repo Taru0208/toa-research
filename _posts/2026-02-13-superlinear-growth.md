@@ -2,6 +2,7 @@
 layout: post
 title: "Why Fun Grows Faster Than You Think: The Superlinear Growth Mechanism"
 date: 2026-02-13 11:00:00 +0900
+description: "Higher-order anticipation (A₂, A₃...) grows superlinearly with game depth. Each additional strategic layer amplifies the layers below it, creating compound engagement returns."
 tags: [theory, proof]
 ---
 

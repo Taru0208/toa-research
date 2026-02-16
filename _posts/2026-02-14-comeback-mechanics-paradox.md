@@ -3,6 +3,7 @@ layout: post
 featured: true
 title: "The Comeback Paradox: Why Designed Reversals Reduce Tension"
 date: 2026-02-14 15:00:00 +0900
+description: "Rubber-banding, revenge meters, and comeback bonuses are supposed to create drama. ToA analysis shows they consistently reduce structural tension by 6-14%, destroying higher-order anticipation."
 tags: [experiment, game-design, paradox]
 ---
 

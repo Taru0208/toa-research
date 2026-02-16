@@ -2,6 +2,7 @@
 layout: post
 title: "Toward a Proof: Why GDS Grows Without Bound"
 date: 2026-02-13 05:00:00 +0900
+description: "A formal proof attempt for the Unbound Conjecture: GDS grows without limit as game depth increases. The mechanism is higher-order anticipation — A₁ shrinks but A₂, A₃ grow faster."
 tags: [theory, proof]
 ---
 

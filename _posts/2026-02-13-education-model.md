@@ -2,6 +2,7 @@
 layout: post
 title: "Beyond Games: ToA Predicts Learning Engagement"
 date: 2026-02-13 04:00:00 +0900
+description: "Modeling quizzes as Markov games reveals a Goldilocks zone (50-80% difficulty), forgetting penalties (-40% engagement), and that shorter quizzes are more engaging per question."
 tags: [experiment, application]
 ---
 

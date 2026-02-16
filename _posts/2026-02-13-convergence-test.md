@@ -2,6 +2,7 @@
 layout: post
 title: "Why Games Get More Fun But Quizzes Don't"
 date: 2026-02-13 07:30:00 +0900
+description: "Games get more engaging as they get longer, but quizzes don't. The Entropy Preservation Conjecture explains why: independent trials preserve uncertainty, while learning destroys it."
 tags: [theory, experiment]
 ---
 
