@@ -122,4 +122,4 @@ This gives designers a concrete target: **design payoff structures where the opt
 
 ---
 
-*Update: Later research found that this paradox can be **completely eliminated** by making aggressive actions have higher expected value than defensive ones. When the exciting strategy is also the optimal strategy, fun and winning converge. [Try the Design Lab](/toa-research/design-lab/) to feel the difference.*
+*Update: Later research found that this paradox can be **completely eliminated** by making aggressive actions have higher expected value than defensive ones. When the exciting strategy is also the optimal strategy, fun and winning converge. [Try the Design Lab](/toa-research/design-lab/) to feel the difference. This principle was further extended to [card draft games](/toa-research/variance-injection/) — where the fix requires injecting intrinsic variance into battle resolution (93% CPG reduction).*
