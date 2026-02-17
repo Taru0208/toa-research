@@ -15,49 +15,63 @@ body {
   display: flex; flex-direction: column; align-items: center;
   min-height: 100vh; user-select: none; -webkit-user-select: none;
 }
-h1 { font-size: 22px; font-weight: 700; margin: 16px 0 4px; color: #e0e4ec; letter-spacing: -0.5px; }
-.subtitle { font-size: 12px; color: #607090; margin-bottom: 12px; }
+h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; letter-spacing: -0.5px; }
+.subtitle { font-size: 12px; color: #607090; margin-bottom: 10px; }
 .game-wrap { width: 400px; max-width: 95vw; display: flex; flex-direction: column; align-items: center; }
 
+/* Match score */
+.match-bar {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  width: 100%; padding: 8px; margin-bottom: 6px;
+}
+.match-score { font-size: 28px; font-weight: 800; }
+.match-score.p1 { color: #5090e0; }
+.match-score.p2 { color: #e05050; }
+.match-vs { font-size: 13px; color: #384060; font-weight: 700; }
+.match-label { font-size: 10px; color: #506080; text-transform: uppercase; letter-spacing: 1px; }
+
 /* HP bars */
-.hp-section { display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px; gap: 8px; }
-.hp-wrap { flex: 1; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 8px; padding: 8px 12px; }
+.hp-section { display: flex; justify-content: space-between; width: 100%; margin-bottom: 6px; gap: 8px; }
+.hp-wrap { flex: 1; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 8px; padding: 7px 10px; }
 .hp-label { font-size: 10px; color: #506080; text-transform: uppercase; letter-spacing: 0.5px; }
-.hp-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.hp-track { flex: 1; height: 10px; background: #151828; border-radius: 5px; overflow: hidden; }
+.hp-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+.hp-track { flex: 1; height: 10px; background: #151828; border-radius: 5px; overflow: hidden; position: relative; }
 .hp-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
 .hp-fill.p1 { background: linear-gradient(90deg, #2060a0, #40a0f0); }
 .hp-fill.p2 { background: linear-gradient(90deg, #a02020, #f04040); }
-.hp-num { font-size: 16px; font-weight: 700; min-width: 32px; text-align: right; }
+.hp-num { font-size: 15px; font-weight: 700; min-width: 28px; text-align: right; }
 .hp-num.p1 { color: #5090e0; }
 .hp-num.p2 { color: #e05050; }
 
-/* Cooldown indicators */
-.cd-row { display: flex; justify-content: space-between; width: 100%; margin-bottom: 8px; gap: 8px; }
-.cd-box { flex: 1; text-align: center; font-size: 11px; color: #506080; padding: 4px; }
+/* Cooldown */
+.cd-row { display: flex; justify-content: space-between; width: 100%; margin-bottom: 6px; gap: 8px; }
+.cd-box { flex: 1; text-align: center; font-size: 11px; color: #506080; padding: 3px; }
 .cd-box .ready { color: #50c070; }
 .cd-box .cooling { color: #c07030; }
 
 /* Arena */
 .arena {
   width: 100%; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 10px;
-  padding: 14px; margin-bottom: 8px; min-height: 140px;
+  padding: 12px; margin-bottom: 6px; min-height: 110px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
-.arena-phase { font-size: 11px; color: #607090; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+.arena-phase { font-size: 10px; color: #506878; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
 .arena-msg { font-size: 14px; color: #a0b0c8; text-align: center; line-height: 1.6; }
 .arena-msg .hit { color: #f06060; font-weight: 600; }
 .arena-msg .miss { color: #607090; }
 .arena-msg .dodge { color: #50c0a0; font-weight: 600; }
 .arena-msg .counter { color: #f0a030; font-weight: 600; }
-.arena-msg .chip { color: #808898; }
+.arena-msg .chip { color: #707888; }
+
+/* Damage flash */
+@keyframes flash-p1 { 0%,100% { box-shadow: none; } 50% { box-shadow: inset 0 0 20px rgba(240,80,80,0.3); } }
+@keyframes flash-p2 { 0%,100% { box-shadow: none; } 50% { box-shadow: inset 0 0 20px rgba(240,80,80,0.3); } }
+.hp-wrap.flash { animation: flash-p1 0.3s ease; }
 
 /* Actions */
-.actions {
-  display: flex; gap: 8px; width: 100%; margin-bottom: 8px;
-}
+.actions { display: flex; gap: 6px; width: 100%; margin-bottom: 6px; }
 .action-btn {
-  flex: 1; padding: 14px 8px; border: 2px solid #1a2040; border-radius: 10px;
+  flex: 1; padding: 12px 6px; border: 2px solid #1a2040; border-radius: 10px;
   background: #0e1020; color: #b0b8c8; font-size: 13px; font-weight: 600;
   cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3;
 }
@@ -65,31 +79,39 @@ h1 { font-size: 22px; font-weight: 700; margin: 16px 0 4px; color: #e0e4ec; lett
   border-color: #3060a0; background: #141830; color: #e0e8f0; transform: translateY(-1px);
 }
 .action-btn:active:not(:disabled) { transform: translateY(0); }
-.action-btn:disabled { opacity: 0.3; cursor: default; }
-.action-btn .key { display: block; font-size: 10px; color: #506080; margin-top: 3px; }
-.action-btn.atk { border-color: #302040; }
-.action-btn.atk:hover:not(:disabled) { border-color: #8040c0; }
-.action-btn.def { border-color: #203040; }
+.action-btn:disabled { opacity: 0.25; cursor: default; }
+.action-btn .key { display: block; font-size: 10px; color: #506080; margin-top: 2px; }
+.action-btn.atk { border-color: #28203e; }
+.action-btn.atk:hover:not(:disabled) { border-color: #7040b0; }
+.action-btn.def { border-color: #1a3038; }
 .action-btn.def:hover:not(:disabled) { border-color: #30a080; }
 
-/* Log */
-.log {
-  width: 100%; background: #0a0c16; border: 1px solid #141828; border-radius: 8px;
-  padding: 10px; max-height: 160px; overflow-y: auto; margin-bottom: 10px;
+/* Bottom row */
+.bottom-row { display: flex; gap: 6px; width: 100%; margin-bottom: 6px; align-items: center; }
+.diff-row { display: flex; gap: 4px; }
+.diff-btn {
+  padding: 4px 10px; border: 1px solid #1a2040; border-radius: 5px;
+  background: #0e1020; color: #506878; font-size: 11px; cursor: pointer;
+  transition: all 0.15s;
 }
-.log-entry { font-size: 11px; color: #506878; padding: 2px 0; border-bottom: 1px solid #0e1220; }
-.log-entry:last-child { border-bottom: none; }
-.log-entry .round-tag { color: #607090; font-weight: 600; }
-
-/* Controls */
-.controls { display: flex; gap: 8px; margin-bottom: 10px; }
+.diff-btn:hover { border-color: #3060a0; color: #90b0e0; }
+.diff-btn.active { border-color: #4070b0; color: #90b0e0; background: #141830; }
+.spacer { flex: 1; }
 .ctrl-btn {
-  padding: 8px 16px; border: 1px solid #1a2040; border-radius: 6px;
-  background: #0e1020; color: #8090a8; font-size: 12px; cursor: pointer;
+  padding: 5px 14px; border: 1px solid #1a2040; border-radius: 5px;
+  background: #0e1020; color: #708098; font-size: 11px; cursor: pointer;
   transition: all 0.15s;
 }
 .ctrl-btn:hover { border-color: #3060a0; color: #c0c8d8; }
-.ctrl-btn.primary { border-color: #304080; color: #90b0e0; }
+
+/* Log */
+.log {
+  width: 100%; background: #0a0c16; border: 1px solid #141828; border-radius: 7px;
+  padding: 8px; max-height: 130px; overflow-y: auto; margin-bottom: 8px;
+}
+.log-entry { font-size: 11px; color: #4a5a6a; padding: 2px 0; border-bottom: 1px solid #0e1220; }
+.log-entry:last-child { border-bottom: none; }
+.log-entry .round-tag { color: #506878; font-weight: 600; }
 
 /* Result overlay */
 .result-overlay {
@@ -99,47 +121,44 @@ h1 { font-size: 22px; font-weight: 700; margin: 16px 0 4px; color: #e0e4ec; lett
 .result-overlay.show { display: flex; }
 .result-box {
   background: #0c0e18; border: 1px solid #1a2040; border-radius: 14px;
-  padding: 28px 36px; text-align: center; max-width: 380px;
+  padding: 24px 32px; text-align: center; max-width: 360px;
 }
-.result-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.result-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
 .result-title.win { color: #50a0f0; }
 .result-title.lose { color: #e05050; }
 .result-title.draw { color: #a0a8b8; }
-.result-detail { font-size: 13px; color: #607090; margin-bottom: 16px; line-height: 1.5; }
-.result-stats { font-size: 12px; color: #506080; margin-bottom: 16px; }
+.result-sub { font-size: 14px; color: #708098; margin-bottom: 4px; }
+.result-detail { font-size: 13px; color: #506878; margin-bottom: 14px; line-height: 1.5; }
 .result-btn {
-  padding: 10px 28px; border: 2px solid #304080; border-radius: 8px;
+  padding: 9px 24px; border: 2px solid #304080; border-radius: 8px;
   background: #141830; color: #90b0e0; font-size: 14px; font-weight: 600;
-  cursor: pointer; transition: all 0.15s;
+  cursor: pointer; transition: all 0.15s; margin: 4px;
 }
 .result-btn:hover { background: #1c2440; border-color: #4070b0; }
-
-/* Difficulty selector */
-.diff-row { display: flex; gap: 6px; margin-bottom: 10px; }
-.diff-btn {
-  padding: 5px 12px; border: 1px solid #1a2040; border-radius: 5px;
-  background: #0e1020; color: #607090; font-size: 11px; cursor: pointer;
-  transition: all 0.15s;
-}
-.diff-btn:hover { border-color: #3060a0; color: #90b0e0; }
-.diff-btn.active { border-color: #4070b0; color: #90b0e0; background: #141830; }
+.result-btn.secondary { border-color: #1a2040; color: #607090; }
 </style>
 </head>
 <body>
 <h1>Spark Duel</h1>
-<p class="subtitle">Sequential combat — attack, then defend.</p>
+<p class="subtitle">Attack, then defend — best of 3</p>
 
 <div class="game-wrap">
+  <div class="match-bar">
+    <div style="text-align:center"><div class="match-label">You</div><div class="match-score p1" id="match-p1">0</div></div>
+    <div class="match-vs">vs</div>
+    <div style="text-align:center"><div class="match-label">AI</div><div class="match-score p2" id="match-p2">0</div></div>
+  </div>
+
   <div class="hp-section">
-    <div class="hp-wrap">
-      <div class="hp-label">You</div>
+    <div class="hp-wrap" id="hp1-wrap">
+      <div class="hp-label">Your HP</div>
       <div class="hp-row">
         <div class="hp-track"><div class="hp-fill p1" id="hp1-bar"></div></div>
         <div class="hp-num p1" id="hp1-num">5</div>
       </div>
     </div>
-    <div class="hp-wrap">
-      <div class="hp-label">AI</div>
+    <div class="hp-wrap" id="hp2-wrap">
+      <div class="hp-label">AI HP</div>
       <div class="hp-row">
         <div class="hp-track"><div class="hp-fill p2" id="hp2-bar"></div></div>
         <div class="hp-num p2" id="hp2-num">5</div>
@@ -162,24 +181,24 @@ h1 { font-size: 22px; font-weight: 700; margin: 16px 0 4px; color: #e0e4ec; lett
       Blast<br><small>3 dmg @ 60%</small><span class="key">1</span>
     </button>
     <button class="action-btn atk" id="btn-zap" onclick="playerAction('zap')">
-      Zap<br><small>1 dmg @ 100%</small><span class="key">2</span>
+      Zap<br><small>1 dmg, sure hit</small><span class="key">2</span>
     </button>
     <button class="action-btn def" id="btn-brace" onclick="playerAction('brace')">
-      Brace<br><small>-1 damage</small><span class="key">3</span>
+      Brace<br><small>reduce 1 dmg</small><span class="key">3</span>
     </button>
     <button class="action-btn def" id="btn-dodge" onclick="playerAction('dodge')">
-      Dodge<br><small>30% evade + counter</small><span class="key">4</span>
+      Dodge<br><small>30% evade+counter</small><span class="key">4</span>
     </button>
   </div>
 
-  <div class="diff-row">
-    <button class="diff-btn" onclick="setDiff(0)">Easy</button>
-    <button class="diff-btn active" onclick="setDiff(1)">Normal</button>
-    <button class="diff-btn" onclick="setDiff(2)">Hard</button>
-  </div>
-
-  <div class="controls">
-    <button class="ctrl-btn primary" onclick="newGame()">New Game</button>
+  <div class="bottom-row">
+    <div class="diff-row">
+      <button class="diff-btn" onclick="setDiff(0)">Easy</button>
+      <button class="diff-btn active" onclick="setDiff(1)">Normal</button>
+      <button class="diff-btn" onclick="setDiff(2)">Hard</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="ctrl-btn" onclick="newMatch()">New Match</button>
   </div>
 
   <div class="log" id="log"></div>
@@ -188,37 +207,48 @@ h1 { font-size: 22px; font-weight: 700; margin: 16px 0 4px; color: #e0e4ec; lett
 <div class="result-overlay" id="result-overlay">
   <div class="result-box">
     <div class="result-title" id="result-title">Victory!</div>
+    <div class="result-sub" id="result-sub"></div>
     <div class="result-detail" id="result-detail"></div>
-    <div class="result-stats" id="result-stats"></div>
-    <button class="result-btn" onclick="closeResult()">Play Again</button>
+    <div id="result-buttons">
+      <button class="result-btn" id="result-next" onclick="nextSet()">Next Set</button>
+      <button class="result-btn secondary" onclick="newMatch()">New Match</button>
+    </div>
   </div>
 </div>
 
 <script>
 const CFG = {
   maxHp: 5, chip: 1, blastDmg: 3, blastHit: 0.60,
-  zapDmg: 1, braceReduce: 1, dodgeChance: 0.30, dodgeCounter: 1
+  zapDmg: 1, braceReduce: 1, dodgeChance: 0.30, dodgeCounter: 1,
+  setsToWin: 2  // Best of 3
 };
 
-let state, round, phase, diff, waitingFor, stats, logEntries;
+let state, round, phase, diff, waitingFor, logEntries;
+let matchScore, setStats, gameOver;
 
-function init() {
+function initSet() {
   state = { hp1: CFG.maxHp, hp2: CFG.maxHp, cd1: 0, cd2: 0 };
-  round = 1; phase = 'p1-attack'; diff = 1;
-  waitingFor = null; stats = { rounds: 0, blasts: 0, dodges: 0, counters: 0 };
+  round = 1; phase = 'idle';
+  waitingFor = null;
+  setStats = { rounds: 0, blasts: 0, dodges: 0, counters: 0 };
   logEntries = [];
-  document.querySelectorAll('.diff-btn').forEach((b, i) => b.classList.toggle('active', i === diff));
+  document.getElementById('log').innerHTML = '';
+}
+
+function newMatch() {
+  document.getElementById('result-overlay').classList.remove('show');
+  matchScore = { p1: 0, p2: 0 };
+  gameOver = false;
+  diff = [...document.querySelectorAll('.diff-btn')].findIndex(b => b.classList.contains('active'));
+  if (diff < 0) diff = 1;
+  initSet();
+  updateUI();
+  setPhase('chip');
 }
 
 function setDiff(d) {
   diff = d;
   document.querySelectorAll('.diff-btn').forEach((b, i) => b.classList.toggle('active', i === d));
-}
-
-function newGame() {
-  init();
-  updateUI();
-  setPhase('chip');
 }
 
 function updateUI() {
@@ -227,39 +257,39 @@ function updateUI() {
   document.getElementById('hp2-bar').style.width = pct(state.hp2) + '%';
   document.getElementById('hp1-num').textContent = Math.max(0, state.hp1);
   document.getElementById('hp2-num').textContent = Math.max(0, state.hp2);
+  document.getElementById('match-p1').textContent = matchScore.p1;
+  document.getElementById('match-p2').textContent = matchScore.p2;
 
   const cd1 = document.getElementById('cd1-box');
   const cd2 = document.getElementById('cd2-box');
-  cd1.innerHTML = state.cd1 > 0
-    ? 'Blast: <span class="cooling">Cooldown</span>'
-    : 'Blast: <span class="ready">Ready</span>';
-  cd2.innerHTML = state.cd2 > 0
-    ? 'AI Blast: <span class="cooling">Cooldown</span>'
-    : 'AI Blast: <span class="ready">Ready</span>';
+  cd1.innerHTML = state.cd1 > 0 ? 'Blast: <span class="cooling">Cooldown</span>' : 'Blast: <span class="ready">Ready</span>';
+  cd2.innerHTML = state.cd2 > 0 ? 'AI Blast: <span class="cooling">Cooldown</span>' : 'AI Blast: <span class="ready">Ready</span>';
+}
+
+function flashHP(who) {
+  const el = document.getElementById(who === 'p1' ? 'hp1-wrap' : 'hp2-wrap');
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
 }
 
 function setButtons(mode) {
-  const blast = document.getElementById('btn-blast');
-  const zap = document.getElementById('btn-zap');
-  const brace = document.getElementById('btn-brace');
-  const dodge = document.getElementById('btn-dodge');
+  const btns = { blast: document.getElementById('btn-blast'), zap: document.getElementById('btn-zap'),
+                 brace: document.getElementById('btn-brace'), dodge: document.getElementById('btn-dodge') };
 
   if (mode === 'attack') {
-    blast.style.display = ''; zap.style.display = '';
-    brace.style.display = 'none'; dodge.style.display = 'none';
-    blast.disabled = state.cd1 > 0;
-    zap.disabled = false;
+    btns.blast.style.display = ''; btns.zap.style.display = '';
+    btns.brace.style.display = 'none'; btns.dodge.style.display = 'none';
+    btns.blast.disabled = state.cd1 > 0;
+    btns.zap.disabled = false;
     waitingFor = 'attack';
   } else if (mode === 'defend') {
-    blast.style.display = 'none'; zap.style.display = 'none';
-    brace.style.display = ''; dodge.style.display = '';
-    brace.disabled = false; dodge.disabled = false;
+    btns.blast.style.display = 'none'; btns.zap.style.display = 'none';
+    btns.brace.style.display = ''; btns.dodge.style.display = '';
+    btns.brace.disabled = false; btns.dodge.disabled = false;
     waitingFor = 'defend';
   } else {
-    blast.disabled = true; zap.disabled = true;
-    brace.disabled = true; dodge.disabled = true;
-    blast.style.display = ''; zap.style.display = '';
-    brace.style.display = ''; dodge.style.display = '';
+    Object.values(btns).forEach(b => { b.disabled = true; b.style.display = ''; });
     waitingFor = null;
   }
 }
@@ -271,67 +301,37 @@ function addLog(text) {
   el.scrollTop = el.scrollHeight;
 }
 
-function arenaMsg(html) {
-  document.getElementById('arena-msg').innerHTML = html;
-}
-
-function arenaPhase(text) {
-  document.getElementById('arena-phase').textContent = text;
-}
+function arenaMsg(html) { document.getElementById('arena-msg').innerHTML = html; }
+function arenaPhase(text) { document.getElementById('arena-phase').textContent = text; }
 
 function resolveAttack(attack, defend) {
-  const results = [];
   if (attack === 'blast') {
     const hit = Math.random() < CFG.blastHit;
-    if (!hit) {
-      results.push({ dmgDef: 0, dmgAtk: 0, desc: 'miss' });
-    } else if (defend === 'brace') {
-      const reduced = Math.max(0, CFG.blastDmg - CFG.braceReduce);
-      results.push({ dmgDef: reduced, dmgAtk: 0, desc: 'hit-brace' });
-    } else { // dodge
-      const dodged = Math.random() < CFG.dodgeChance;
-      if (dodged) {
-        results.push({ dmgDef: 0, dmgAtk: CFG.dodgeCounter, desc: 'dodged' });
-      } else {
-        results.push({ dmgDef: CFG.blastDmg, dmgAtk: 0, desc: 'hit-dodge-fail' });
-      }
-    }
-  } else { // zap
-    if (defend === 'brace') {
-      const reduced = Math.max(0, CFG.zapDmg - CFG.braceReduce);
-      results.push({ dmgDef: reduced, dmgAtk: 0, desc: 'zap-brace' });
-    } else { // dodge
-      const dodged = Math.random() < CFG.dodgeChance;
-      if (dodged) {
-        results.push({ dmgDef: 0, dmgAtk: CFG.dodgeCounter, desc: 'zap-dodged' });
-      } else {
-        results.push({ dmgDef: CFG.zapDmg, dmgAtk: 0, desc: 'zap-hit' });
-      }
-    }
+    if (!hit) return { dmgDef: 0, dmgAtk: 0, desc: 'miss' };
+    if (defend === 'brace') return { dmgDef: Math.max(0, CFG.blastDmg - CFG.braceReduce), dmgAtk: 0, desc: 'hit-brace' };
+    return Math.random() < CFG.dodgeChance
+      ? { dmgDef: 0, dmgAtk: CFG.dodgeCounter, desc: 'dodged' }
+      : { dmgDef: CFG.blastDmg, dmgAtk: 0, desc: 'hit-dodge-fail' };
+  } else {
+    if (defend === 'brace') return { dmgDef: Math.max(0, CFG.zapDmg - CFG.braceReduce), dmgAtk: 0, desc: 'zap-brace' };
+    return Math.random() < CFG.dodgeChance
+      ? { dmgDef: 0, dmgAtk: CFG.dodgeCounter, desc: 'zap-dodged' }
+      : { dmgDef: CFG.zapDmg, dmgAtk: 0, desc: 'zap-hit' };
   }
-  return results[0];
 }
 
 function describeResult(who, attack, result) {
   const atkName = attack === 'blast' ? 'Blast' : 'Zap';
   const attacker = who === 'you' ? 'You' : 'AI';
   const defender = who === 'you' ? 'AI' : 'You';
-
   switch (result.desc) {
-    case 'miss':
-      return `${attacker} used ${atkName} — <span class="miss">missed!</span>`;
-    case 'hit-brace':
-      return `${attacker}'s ${atkName} hit! ${defender} braced — <span class="hit">${result.dmgDef} damage</span>`;
-    case 'hit-dodge-fail':
-      return `${attacker}'s ${atkName} hit! ${defender} tried to dodge but failed — <span class="hit">${result.dmgDef} damage!</span>`;
-    case 'dodged':
-      return `${attacker}'s ${atkName} hit! ${defender} <span class="dodge">dodged</span> and <span class="counter">countered for ${result.dmgAtk}!</span>`;
-    case 'zap-brace':
-      return `${attacker}'s Zap — ${defender} braced, <span class="miss">absorbed</span>`;
-    case 'zap-dodged':
-      return `${attacker}'s Zap — ${defender} <span class="dodge">dodged</span> and <span class="counter">countered for ${result.dmgAtk}!</span>`;
-    case 'zap-hit':
-      return `${attacker}'s Zap — <span class="hit">${result.dmgDef} damage</span>`;
+    case 'miss': return `${attacker} used ${atkName} — <span class="miss">missed!</span>`;
+    case 'hit-brace': return `${attacker}'s ${atkName} hits! ${defender} braced — <span class="hit">${result.dmgDef} dmg</span>`;
+    case 'hit-dodge-fail': return `${attacker}'s ${atkName} hits! Dodge failed — <span class="hit">${result.dmgDef} dmg!</span>`;
+    case 'dodged': return `${attacker}'s ${atkName} — <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`;
+    case 'zap-brace': return `${attacker}'s Zap — braced, <span class="miss">absorbed</span>`;
+    case 'zap-dodged': return `${attacker}'s Zap — <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`;
+    case 'zap-hit': return `${attacker}'s Zap — <span class="hit">${result.dmgDef} dmg</span>`;
   }
 }
 
@@ -340,10 +340,8 @@ function aiChooseAttack() {
   if (diff === 0) return avail[Math.floor(Math.random() * avail.length)];
   if (diff === 1) {
     if (avail.includes('blast') && state.hp1 <= CFG.blastDmg) return 'blast';
-    if (avail.includes('blast')) return Math.random() < 0.6 ? 'blast' : 'zap';
-    return 'zap';
+    return avail.includes('blast') && Math.random() < 0.6 ? 'blast' : 'zap';
   }
-  // Hard: optimize
   if (avail.includes('blast')) {
     if (state.hp1 <= CFG.blastDmg) return 'blast';
     return Math.random() < 0.65 ? 'blast' : 'zap';
@@ -354,110 +352,131 @@ function aiChooseAttack() {
 function aiChooseDefend(playerAttack) {
   if (diff === 0) return Math.random() < 0.5 ? 'brace' : 'dodge';
   if (diff === 1) {
-    if (playerAttack === 'blast') return Math.random() < 0.6 ? 'brace' : 'dodge';
-    return Math.random() < 0.5 ? 'brace' : 'dodge';
+    return playerAttack === 'blast'
+      ? (Math.random() < 0.55 ? 'brace' : 'dodge')
+      : (Math.random() < 0.45 ? 'brace' : 'dodge');
   }
-  // Hard: against blast, brace is safer; against zap, brace absorbs all
-  if (playerAttack === 'zap') return 'brace'; // zero damage
-  return Math.random() < 0.7 ? 'brace' : 'dodge';
+  return playerAttack === 'zap'
+    ? (Math.random() < 0.8 ? 'brace' : 'dodge')
+    : (Math.random() < 0.65 ? 'brace' : 'dodge');
 }
 
 function checkEnd() {
   if (state.hp1 <= 0 || state.hp2 <= 0) {
-    setTimeout(() => showResult(), 400);
+    setTimeout(() => endSet(), 500);
     return true;
   }
   return false;
 }
 
-function showResult() {
+function endSet() {
+  let setWinner;
+  if (state.hp1 <= 0 && state.hp2 <= 0) setWinner = 'draw';
+  else if (state.hp2 <= 0) { setWinner = 'p1'; matchScore.p1++; }
+  else { setWinner = 'p2'; matchScore.p2++; }
+  updateUI();
+
   const overlay = document.getElementById('result-overlay');
   const title = document.getElementById('result-title');
+  const sub = document.getElementById('result-sub');
   const detail = document.getElementById('result-detail');
-  const statsEl = document.getElementById('result-stats');
+  const nextBtn = document.getElementById('result-next');
+
+  // Check match end
+  const matchOver = matchScore.p1 >= CFG.setsToWin || matchScore.p2 >= CFG.setsToWin;
+
+  if (matchOver) {
+    gameOver = true;
+    if (matchScore.p1 >= CFG.setsToWin) {
+      title.textContent = 'Match Won!'; title.className = 'result-title win';
+      sub.textContent = `${matchScore.p1} - ${matchScore.p2}`;
+    } else {
+      title.textContent = 'Match Lost'; title.className = 'result-title lose';
+      sub.textContent = `${matchScore.p1} - ${matchScore.p2}`;
+    }
+    detail.textContent = `Total sets: ${matchScore.p1 + matchScore.p2}`;
+    nextBtn.style.display = 'none';
+  } else {
+    if (setWinner === 'draw') {
+      title.textContent = 'Draw!'; title.className = 'result-title draw';
+    } else if (setWinner === 'p1') {
+      title.textContent = 'Set Won!'; title.className = 'result-title win';
+    } else {
+      title.textContent = 'Set Lost'; title.className = 'result-title lose';
+    }
+    sub.textContent = `Score: ${matchScore.p1} - ${matchScore.p2}`;
+    detail.textContent = `${setStats.rounds} rounds — First to ${CFG.setsToWin} wins`;
+    nextBtn.style.display = '';
+    nextBtn.textContent = 'Next Set';
+  }
 
   overlay.classList.add('show');
-  if (state.hp1 <= 0 && state.hp2 <= 0) {
-    title.textContent = 'Draw!'; title.className = 'result-title draw';
-    detail.textContent = 'Both fighters fell at the same time.';
-  } else if (state.hp2 <= 0) {
-    title.textContent = 'Victory!'; title.className = 'result-title win';
-    detail.textContent = `You defeated the AI in ${stats.rounds} rounds.`;
-  } else {
-    title.textContent = 'Defeat'; title.className = 'result-title lose';
-    detail.textContent = `The AI won in ${stats.rounds} rounds.`;
-  }
-  statsEl.textContent = `Blasts: ${stats.blasts} | Dodges: ${stats.dodges} | Counters: ${stats.counters}`;
   setButtons('none');
 }
 
-function closeResult() {
+function nextSet() {
   document.getElementById('result-overlay').classList.remove('show');
-  newGame();
+  if (gameOver) { newMatch(); return; }
+  initSet();
+  updateUI();
+  setPhase('chip');
 }
 
-// Game flow
 function setPhase(p) {
   phase = p;
 
   if (p === 'chip') {
-    // Apply chip damage
     state.hp1 = Math.max(0, state.hp1 - CFG.chip);
     state.hp2 = Math.max(0, state.hp2 - CFG.chip);
-    stats.rounds = round;
+    setStats.rounds = round;
     updateUI();
+    flashHP('p1'); flashHP('p2');
 
-    const msg = `<span class="chip">Both take ${CFG.chip} chip damage</span>`;
+    const msg = `<span class="chip">Chip damage: both -${CFG.chip}</span>`;
     arenaPhase(`Round ${round}`);
     arenaMsg(msg);
     addLog(`<span class="round-tag">R${round}</span> ${msg}`);
 
     if (checkEnd()) return;
-    setTimeout(() => setPhase('p1-attack'), 700);
+    setTimeout(() => setPhase('p1-attack'), 600);
 
   } else if (p === 'p1-attack') {
     arenaPhase(`Round ${round} — Your Attack`);
     arenaMsg('Choose your attack!');
     setButtons('attack');
 
-  } else if (p === 'p1-attack-resolve') {
-    // waitingFor was set, playerAction handles this
-
   } else if (p === 'p2-attack') {
     setButtons('none');
     const aiAtk = aiChooseAttack();
     const atkName = aiAtk === 'blast' ? 'Blast' : 'Zap';
-
-    // Update cooldown
     if (aiAtk === 'blast') state.cd2 = 1; else state.cd2 = Math.max(0, state.cd2 - 1);
+    updateUI();
 
-    arenaPhase(`Round ${round} — AI Attacks with ${atkName}`);
-    arenaMsg(`AI uses ${atkName}! Choose your defense.`);
-    waitingFor = aiAtk; // store what AI used
+    arenaPhase(`Round ${round} — AI uses ${atkName}!`);
+    arenaMsg(`AI attacks with <strong>${atkName}</strong>. Choose your defense!`);
+    waitingFor = aiAtk;
     setButtons('defend');
 
   } else if (p === 'end-round') {
     round++;
-    // Tick cooldowns at round end
-    // Actually cooldowns are set on use, decremented implicitly. Already handled.
-    setTimeout(() => setPhase('chip'), 500);
+    setTimeout(() => setPhase('chip'), 400);
   }
 }
 
 function playerAction(action) {
   if (phase === 'p1-attack' && (action === 'blast' || action === 'zap')) {
     if (action === 'blast' && state.cd1 > 0) return;
-    if (action === 'blast') stats.blasts++;
-    if (action === 'blast') state.cd1 = 1; else state.cd1 = Math.max(0, state.cd1 - 1);
+    if (action === 'blast') { setStats.blasts++; state.cd1 = 1; }
+    else state.cd1 = Math.max(0, state.cd1 - 1);
 
-    // AI defends
     const aiDef = aiChooseDefend(action);
     const result = resolveAttack(action, aiDef);
 
-    // Apply damage
     state.hp2 = Math.max(0, state.hp2 - result.dmgDef);
     state.hp1 = Math.max(0, state.hp1 - result.dmgAtk);
-    if (result.dmgAtk > 0) stats.counters++;
+    if (result.dmgAtk > 0) setStats.counters++;
+    if (result.dmgDef > 0) flashHP('p2');
+    if (result.dmgAtk > 0) flashHP('p1');
 
     updateUI();
     const desc = describeResult('you', action, result);
@@ -465,17 +484,18 @@ function playerAction(action) {
     addLog(desc);
 
     if (checkEnd()) return;
-    setTimeout(() => setPhase('p2-attack'), 900);
+    setTimeout(() => setPhase('p2-attack'), 800);
 
   } else if (phase === 'p2-attack' && (action === 'brace' || action === 'dodge')) {
-    if (action === 'dodge') stats.dodges++;
-    const aiAtk = waitingFor; // what AI chose
+    if (action === 'dodge') setStats.dodges++;
+    const aiAtk = waitingFor;
     const result = resolveAttack(aiAtk, action);
 
-    // AI attacks player: dmgDef = damage to player, dmgAtk = counter to AI
     state.hp1 = Math.max(0, state.hp1 - result.dmgDef);
     state.hp2 = Math.max(0, state.hp2 - result.dmgAtk);
-    if (result.dmgAtk > 0) stats.counters++;
+    if (result.dmgAtk > 0) setStats.counters++;
+    if (result.dmgDef > 0) flashHP('p1');
+    if (result.dmgAtk > 0) flashHP('p2');
 
     updateUI();
     const desc = describeResult('ai', aiAtk, result);
@@ -483,11 +503,10 @@ function playerAction(action) {
     addLog(desc);
 
     if (checkEnd()) return;
-    setTimeout(() => setPhase('end-round'), 900);
+    setTimeout(() => setPhase('end-round'), 800);
   }
 }
 
-// Keyboard
 document.addEventListener('keydown', e => {
   if (e.key === '1') playerAction('blast');
   else if (e.key === '2') playerAction('zap');
@@ -495,13 +514,18 @@ document.addEventListener('keydown', e => {
   else if (e.key === '4') playerAction('dodge');
   else if (e.key === 'n' || e.key === 'N') {
     const overlay = document.getElementById('result-overlay');
-    if (overlay.classList.contains('show')) closeResult(); else newGame();
+    if (overlay.classList.contains('show')) {
+      if (gameOver) newMatch(); else nextSet();
+    }
   }
 });
 
-// Start
-init();
-newGame();
+// Init
+matchScore = { p1: 0, p2: 0 };
+gameOver = false; diff = 1;
+initSet();
+updateUI();
+setPhase('chip');
 </script>
 </body>
 </html>
