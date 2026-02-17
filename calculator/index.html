@@ -125,6 +125,7 @@ canvas { width: 100% !important; height: 100% !important; }
             <option value="hp" selected>HP Combat (basic)</option>
             <option value="asymmetric">Asymmetric Combat (ultra-high tension)</option>
             <option value="combat">Tactical Combat (3 actions)</option>
+            <option value="coinduel">Coin Duel (resource game)</option>
           </select>
         </div>
         <div id="gameDescription" style="font-size: 12px; color: var(--text2); margin-top: 4px;"></div>
@@ -485,6 +486,115 @@ function mergeTransitions(transitions) {
 
 
 // ═══════════════════════════════════════════════
+// COIN DUEL — resource management game
+// ═══════════════════════════════════════════════
+
+function binomCoeff(n, k) {
+  if (k < 0 || k > n) return 0;
+  if (k === 0 || k === n) return 1;
+  if (k > n - k) k = n - k;
+  let r = 1;
+  for (let i = 0; i < k; i++) r = r * (n - i) / (i + 1);
+  return Math.round(r);
+}
+
+function flipOutcomes(n) {
+  // [(probability, headsCount)] for flipping n coins
+  const out = [];
+  const denom = Math.pow(2, n);
+  for (let h = 0; h <= n; h++) {
+    out.push([binomCoeff(n, h) / denom, h]);
+  }
+  return out;
+}
+
+function roundResult(n1, n2) {
+  // Returns [pWin1, pDraw, pWin2]
+  const o1 = flipOutcomes(n1);
+  const o2 = flipOutcomes(n2);
+  let pw1 = 0, pd = 0, pw2 = 0;
+  for (const [p1, h1] of o1) {
+    for (const [p2, h2] of o2) {
+      const j = p1 * p2;
+      if (h1 > h2) pw1 += j;
+      else if (h1 === h2) pd += j;
+      else pw2 += j;
+    }
+  }
+  return [pw1, pd, pw2];
+}
+
+function coinDuelGame(params) {
+  const { roundsToWin, initialBank, maxBank, maxWager, refill } = params;
+
+  function effectiveWager(wagerIdx, bank) {
+    const desired = wagerIdx + 1; // action 0→wager 1, 1→wager 2, etc.
+    return bank > 0 ? Math.max(1, Math.min(desired, bank)) : 0;
+  }
+
+  function transitionsForWagerPair(state, w1, w2) {
+    const [s1, s2, b1, b2] = state;
+    const newB1 = Math.min(b1 - w1 + refill, maxBank);
+    const newB2 = Math.min(b2 - w2 + refill, maxBank);
+
+    if (w1 === 0 || w2 === 0) {
+      if (w1 === 0 && w2 === 0) return [[1.0, [s1, s2, Math.min(b1 + refill, maxBank), Math.min(b2 + refill, maxBank)]]];
+      if (w1 === 0) return [[1.0, [s1, s2 + 1, Math.min(b1 + refill, maxBank), newB2]]];
+      return [[1.0, [s1 + 1, s2, newB1, Math.min(b2 + refill, maxBank)]]];
+    }
+
+    const [pw1, , pw2] = roundResult(w1, w2);
+    const decisive = pw1 + pw2;
+    const p1 = decisive > 0 ? pw1 / decisive : 0.5;
+    const p2 = decisive > 0 ? pw2 / decisive : 0.5;
+
+    return [
+      [p1, [s1 + 1, s2, newB1, newB2]],
+      [p2, [s1, s2 + 1, newB1, newB2]],
+    ];
+  }
+
+  function getTransitionsForPolicy(state, policy) {
+    const [s1, s2, b1, b2] = state;
+    if (s1 >= roundsToWin || s2 >= roundsToWin) return [];
+
+    const nActions = maxWager;
+    const oppProbs = new Array(nActions).fill(1 / nActions);
+    const allTrans = [];
+
+    for (let a1 = 0; a1 < nActions; a1++) {
+      const p1prob = policy[a1];
+      if (p1prob < 1e-10) continue;
+      const w1 = effectiveWager(a1, b1);
+      for (let a2 = 0; a2 < nActions; a2++) {
+        const p2prob = oppProbs[a2];
+        if (p2prob < 1e-10) continue;
+        const w2 = effectiveWager(a2, b2);
+        const trans = transitionsForWagerPair(state, w1, w2);
+        for (const [prob, next] of trans) {
+          allTrans.push([p1prob * p2prob * prob, next]);
+        }
+      }
+    }
+
+    return mergeTransitions(allTrans);
+  }
+
+  const actionNames = [];
+  for (let i = 1; i <= maxWager; i++) actionNames.push(`Wager ${i}`);
+
+  return {
+    nActions: maxWager,
+    actionNames,
+    getTransitionsForPolicy,
+    isTerminal: s => s[0] >= roundsToWin || s[1] >= roundsToWin,
+    intrinsicDesire: s => (s[0] >= roundsToWin && s[1] < roundsToWin) ? 1.0 : 0.0,
+    initialState: [0, 0, initialBank, initialBank],
+  };
+}
+
+
+// ═══════════════════════════════════════════════
 // AGENCY METRICS (PI, CPG)
 // ═══════════════════════════════════════════════
 
@@ -499,16 +609,18 @@ function computeGDSForPolicy(combatModel, policy, nestLevel) {
 }
 
 function computePolicyImpact(combatModel, nestLevel) {
+  const n = combatModel.nActions;
   const gdsValues = [];
-  for (let a = 0; a < combatModel.nActions; a++) {
-    const policy = [0, 0, 0];
+  for (let a = 0; a < n; a++) {
+    const policy = new Array(n).fill(0);
     policy[a] = 1.0;
     const result = computeGDSForPolicy(combatModel, policy, nestLevel);
     gdsValues.push({ action: a, gds: result.gds, name: combatModel.actionNames[a] });
   }
 
   // Also random
-  const rndResult = computeGDSForPolicy(combatModel, [1/3, 1/3, 1/3], nestLevel);
+  const rndPolicy = new Array(n).fill(1 / n);
+  const rndResult = computeGDSForPolicy(combatModel, rndPolicy, nestLevel);
   gdsValues.push({ action: -1, gds: rndResult.gds, name: 'Random' });
 
   const gdsList = gdsValues.map(v => v.gds);
@@ -520,31 +632,23 @@ function computeCPG(combatModel, nestLevel, resolution = 10) {
   const n = combatModel.nActions;
   const results = [];
 
-  // Grid search over mixed strategies
-  for (let i = 0; i <= resolution; i++) {
-    for (let j = 0; j <= resolution - i; j++) {
-      const k = resolution - i - j;
-      const policy = [i / resolution, j / resolution, k / resolution];
-
-      const result = computeGDSForPolicy(combatModel, policy, nestLevel);
-
-      // Get d_global at initial state — approximate via another analysis with nest=1
-      // Actually we need the win probability. Let's compute it separately.
-      // For CPG, we need D₀ (win probability from initial state under this policy)
-      const wpResult = toaAnalyze({
-        initialState: combatModel.initialState,
-        isTerminal: combatModel.isTerminal,
-        getTransitions: s => combatModel.getTransitionsForPolicy(s, policy),
-        intrinsicDesire: combatModel.intrinsicDesire,
-        nestLevel: 1,
-      });
-
-      // D₀ is the propagated desire at initial state — we need it from the analysis
-      // Since we can't easily extract it from our current API, let's compute it directly
-      const d0 = computeWinProb(combatModel, policy);
-
-      results.push({ gds: result.gds, d0, policy: [...policy] });
+  // Generate grid points over n-simplex
+  function* simplexGrid(dims, res, prefix = []) {
+    if (dims === 1) {
+      const remaining = res - prefix.reduce((a, b) => a + b, 0);
+      yield [...prefix, remaining / res];
+      return;
     }
+    const used = prefix.reduce((a, b) => a + b, 0);
+    for (let i = 0; i <= res - used; i++) {
+      yield* simplexGrid(dims - 1, res, [...prefix, i]);
+    }
+  }
+
+  for (const policy of simplexGrid(n, resolution)) {
+    const result = computeGDSForPolicy(combatModel, policy, nestLevel);
+    const d0 = computeWinProb(combatModel, policy);
+    results.push({ gds: result.gds, d0, policy: [...policy] });
   }
 
   // Fun-optimal: highest GDS
@@ -666,6 +770,16 @@ const GAME_CONFIGS = {
     ],
     hasAgency: true,
   },
+  coinduel: {
+    description: 'Resource game: both players wager coins each round. More coins = better odds, but the bank is limited. First to N round wins takes the game. Player chooses wager amount.',
+    params: [
+      { id: 'roundsToWin', label: 'Rounds to Win', min: 2, max: 4, value: 3, step: 1 },
+      { id: 'maxWager', label: 'Max Wager', min: 2, max: 4, value: 3, step: 1 },
+      { id: 'initialBank', label: 'Starting Coins', min: 3, max: 8, value: 5, step: 1 },
+      { id: 'refill', label: 'Coins per Turn', min: 0, max: 2, value: 1, step: 1 },
+    ],
+    hasAgency: true,
+  },
 };
 
 let computeTimeout = null;
@@ -768,6 +882,25 @@ function runCompute() {
       // Agency metrics
       const { pi, gdsValues } = computePolicyImpact(cm, nestLevel);
       const { cpg, funOptimal, winOptimal } = computeCPG(cm, nestLevel, 10);
+      agencyResult = { pi, gdsValues, cpg, funOptimal, winOptimal };
+      break;
+    }
+    case 'coinduel': {
+      const cd = coinDuelGame({
+        roundsToWin: getParam('roundsToWin', 3),
+        maxWager: getParam('maxWager', 3),
+        initialBank: getParam('initialBank', 5),
+        maxBank: 8,
+        refill: getParam('refill', 1),
+      });
+      // GDS under random policy
+      const rndPolicy = new Array(cd.nActions).fill(1 / cd.nActions);
+      result = computeGDSForPolicy(cd, rndPolicy, nestLevel);
+
+      // Agency metrics
+      const { pi, gdsValues } = computePolicyImpact(cd, nestLevel);
+      const cpgRes = getParam('maxWager', 3) <= 3 ? 8 : 6; // lower resolution for 4 actions
+      const { cpg, funOptimal, winOptimal } = computeCPG(cd, nestLevel, cpgRes);
       agencyResult = { pi, gdsValues, cpg, funOptimal, winOptimal };
       break;
     }
@@ -1198,6 +1331,16 @@ const PRESETS = [
     name: 'Deep Strategy',
     desc: 'High HP tactical',
     hash: 'combat,7,0.70,maxHp=7,heavyDmg=3,heavyHit=0.7,guardCounter=2,guardBlock=0.7',
+  },
+  {
+    name: 'Coin Duel',
+    desc: 'Resource wager game',
+    hash: 'coinduel,5,0.50,roundsToWin=3,maxWager=3,initialBank=5,refill=1',
+  },
+  {
+    name: 'Coin Duel+',
+    desc: 'High agency variant',
+    hash: 'coinduel,5,0.50,roundsToWin=3,maxWager=4,initialBank=5,refill=2',
   },
 ];
 
