@@ -154,14 +154,14 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
       <div class="hp-label">Your HP</div>
       <div class="hp-row">
         <div class="hp-track"><div class="hp-fill p1" id="hp1-bar"></div></div>
-        <div class="hp-num p1" id="hp1-num">5</div>
+        <div class="hp-num p1" id="hp1-num">7</div>
       </div>
     </div>
     <div class="hp-wrap" id="hp2-wrap">
       <div class="hp-label">AI HP</div>
       <div class="hp-row">
         <div class="hp-track"><div class="hp-fill p2" id="hp2-bar"></div></div>
-        <div class="hp-num p2" id="hp2-num">5</div>
+        <div class="hp-num p2" id="hp2-num">7</div>
       </div>
     </div>
   </div>
@@ -178,10 +178,10 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
 
   <div class="actions" id="actions">
     <button class="action-btn atk" id="btn-blast" onclick="playerAction('blast')">
-      Blast<br><small>3 dmg @ 60%</small><span class="key">1</span>
+      Blast<br><small>4 dmg @ 60%</small><span class="key">1</span>
     </button>
     <button class="action-btn atk" id="btn-zap" onclick="playerAction('zap')">
-      Zap<br><small>1 dmg, sure hit</small><span class="key">2</span>
+      Zap<br><small>2 dmg, sure hit</small><span class="key">2</span>
     </button>
     <button class="action-btn def" id="btn-brace" onclick="playerAction('brace')">
       Brace<br><small>reduce 1 dmg</small><span class="key">3</span>
@@ -218,8 +218,8 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
 
 <script>
 const CFG = {
-  maxHp: 5, chip: 1, blastDmg: 3, blastHit: 0.60,
-  zapDmg: 1, braceReduce: 1, dodgeChance: 0.30, dodgeCounter: 1,
+  maxHp: 7, chip: 1, blastDmg: 4, blastHit: 0.60,
+  zapDmg: 2, braceReduce: 1, dodgeChance: 0.30, dodgeCounter: 1,
   setsToWin: 2  // Best of 3
 };
 
