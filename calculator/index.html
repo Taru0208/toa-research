@@ -184,6 +184,23 @@ canvas { width: 100% !important; height: 100% !important; }
         <div id="componentList" style="font-size: 12px; color: var(--text2); font-family: monospace;"></div>
       </div>
 
+      <div class="panel" id="heatmapPanel" style="margin-bottom: 16px; display: none;">
+        <div class="panel-title">
+          State Map
+          <span style="font-weight: 400; font-size: 11px; color: var(--text2); margin-left: 8px;">
+            <select id="heatmapMode" onchange="drawHeatmap()" style="padding: 1px 4px; font-size: 11px; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; color: var(--text2);">
+              <option value="a1">A₁ (Tension)</option>
+              <option value="pwin">P(win)</option>
+            </select>
+          </span>
+        </div>
+        <div id="heatmapContainer" style="display: flex; align-items: flex-start; gap: 12px;">
+          <canvas id="heatmapCanvas" style="image-rendering: pixelated;"></canvas>
+          <div id="heatmapLegend" style="font-size: 11px; color: var(--text2);"></div>
+        </div>
+        <div id="heatmapTooltip" style="font-size: 12px; color: var(--text2); margin-top: 8px; font-family: monospace;"></div>
+      </div>
+
       <div class="panel" id="strategyPanel" style="margin-bottom: 16px; display: none;">
         <div class="panel-title">Strategy Analysis</div>
         <div id="strategyContent"></div>
@@ -243,6 +260,7 @@ function toaAnalyze({ initialState, isTerminal, getTransitions, intrinsicDesire,
 
   const gdsComponents = new Float64Array(nestLevel);
   const aValues = new Array(nestLevel);
+  let pWinArr = null;
 
   for (let comp = 0; comp < nestLevel; comp++) {
     // Seed desire
@@ -262,6 +280,9 @@ function toaAnalyze({ initialState, isTerminal, getTransitions, intrinsicDesire,
         dGlobal[si] += dGlobal[ni] * prob;
       }
     }
+
+    // Store P(win) from first component
+    if (comp === 0) pWinArr = new Float64Array(dGlobal);
 
     // Compute A_k (anticipation variance)
     const a = new Float64Array(N);
@@ -320,7 +341,11 @@ function toaAnalyze({ initialState, isTerminal, getTransitions, intrinsicDesire,
     gdsComponents: Array.from(gdsComponents),
     gds: gdsComponents.reduce((a, b) => a + b, 0),
     stateCount: N,
-    dGlobal0: null, // could store if needed
+    states,
+    stateIdx,
+    stateKey,
+    pWin: pWinArr,
+    a1: aValues.length > 0 ? aValues[0] : null,
   };
 }
 
@@ -791,6 +816,8 @@ const GAME_CONFIGS = {
 };
 
 let computeTimeout = null;
+let lastResult = null;
+let lastGameType = null;
 
 function updateLabel(sliderId, labelId, decimals = 0) {
   const v = document.getElementById(sliderId).value;
@@ -915,7 +942,12 @@ function runCompute() {
   }
 
   const elapsed = performance.now() - t0;
+  lastResult = result;
+  lastGameType = gameType;
   displayResults(result, agencyResult, alpha, elapsed);
+
+  // Heatmap
+  drawHeatmap();
 
   // Show formula panel for Best-of-N only
   if (gameType === 'bestofn') {
@@ -1057,6 +1089,227 @@ function drawChart(components) {
     ctx.textAlign = 'center';
     ctx.fillText(`A${i + 1}`, x + barWidth / 2, H - pad.bottom + 15);
   }
+}
+
+// ═══════════════════════════════════════════════
+// STATE MAP (HEATMAP) — per-state A₁ and P(win)
+// ═══════════════════════════════════════════════
+
+function drawHeatmap() {
+  const panel = document.getElementById('heatmapPanel');
+  if (!lastResult || !lastResult.states || !lastResult.a1) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  const mode = document.getElementById('heatmapMode').value;
+  const gt = lastGameType;
+
+  // Determine grid dimensions based on game type
+  let gridData = null;
+  if (gt === 'bestofn' || gt === 'hp' || gt === 'asymmetric') {
+    gridData = buildGrid2D(lastResult, gt, mode);
+  } else if (gt === 'combat') {
+    gridData = buildGrid2D(lastResult, gt, mode);
+  } else if (gt === 'coinduel') {
+    // Show score dimension only (marginalize over bank)
+    gridData = buildGridCoinDuel(lastResult, mode);
+  }
+
+  if (!gridData) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  panel.style.display = '';
+  renderHeatmapCanvas(gridData, mode);
+}
+
+function buildGrid2D(result, gt, mode) {
+  const { states, stateIdx, stateKey, pWin, a1 } = result;
+  const data = mode === 'a1' ? a1 : pWin;
+
+  // Determine axes based on game type
+  let xMax, yMax, getXY, xLabel, yLabel;
+  if (gt === 'bestofn') {
+    // State: [winsP1, winsP2]
+    const target = Math.max(...states.filter(s => Array.isArray(s)).map(s => Math.max(s[0], s[1])));
+    xMax = target; yMax = target;
+    getXY = s => [s[0], s[1]];
+    xLabel = 'P1 wins'; yLabel = 'P2 wins';
+  } else if (gt === 'hp') {
+    const maxHp = states[0][0];
+    xMax = maxHp; yMax = maxHp;
+    getXY = s => [maxHp - s[0], maxHp - s[1]]; // invert so (0,0) is full HP
+    xLabel = 'P1 damage taken'; yLabel = 'P2 damage taken';
+  } else if (gt === 'asymmetric') {
+    const maxHp = Math.max(...states.map(s => Math.max(s[0], s[1])));
+    xMax = maxHp; yMax = maxHp;
+    getXY = s => [maxHp - s[0], maxHp - s[1]];
+    xLabel = 'P1 damage taken'; yLabel = 'P2 damage taken';
+  } else if (gt === 'combat') {
+    // State: [hp1, hp2]
+    const maxHp = states[0][0];
+    xMax = maxHp; yMax = maxHp;
+    getXY = s => [maxHp - s[0], maxHp - s[1]];
+    xLabel = 'P1 damage taken'; yLabel = 'P2 damage taken';
+  }
+
+  const grid = [];
+  for (let y = 0; y <= yMax; y++) {
+    const row = [];
+    for (let x = 0; x <= xMax; x++) row.push(NaN);
+    grid.push(row);
+  }
+
+  for (let i = 0; i < states.length; i++) {
+    const s = states[i];
+    if (!Array.isArray(s)) continue;
+    const [x, y] = getXY(s);
+    if (x >= 0 && x <= xMax && y >= 0 && y <= yMax) {
+      grid[y][x] = data[i];
+    }
+  }
+
+  return { grid, xMax, yMax, xLabel, yLabel };
+}
+
+function buildGridCoinDuel(result, mode) {
+  const { states, stateIdx, stateKey, pWin, a1 } = result;
+  const data = mode === 'a1' ? a1 : pWin;
+
+  // Find max score
+  const maxScore = Math.max(...states.map(s => Math.max(s[0], s[1])));
+
+  // Average over bank states for each (s1, s2) pair
+  const grid = [];
+  const counts = [];
+  for (let y = 0; y <= maxScore; y++) {
+    grid.push(new Array(maxScore + 1).fill(0));
+    counts.push(new Array(maxScore + 1).fill(0));
+  }
+
+  for (let i = 0; i < states.length; i++) {
+    const [s1, s2] = states[i];
+    if (s1 >= 0 && s1 <= maxScore && s2 >= 0 && s2 <= maxScore && !isNaN(data[i])) {
+      grid[s2][s1] += data[i];
+      counts[s2][s1]++;
+    }
+  }
+
+  // Average
+  for (let y = 0; y <= maxScore; y++) {
+    for (let x = 0; x <= maxScore; x++) {
+      grid[y][x] = counts[y][x] > 0 ? grid[y][x] / counts[y][x] : NaN;
+    }
+  }
+
+  return { grid, xMax: maxScore, yMax: maxScore, xLabel: 'P1 score', yLabel: 'P2 score' };
+}
+
+function renderHeatmapCanvas(gridData, mode) {
+  const { grid, xMax, yMax, xLabel, yLabel } = gridData;
+  const canvas = document.getElementById('heatmapCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const cellSize = Math.min(Math.floor(280 / Math.max(xMax + 1, yMax + 1)), 40);
+  const labelPad = 30;
+  const w = (xMax + 1) * cellSize + labelPad;
+  const h = (yMax + 1) * cellSize + labelPad;
+
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  canvas.style.width = w + 'px';
+  canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  // Find value range
+  let vMin = Infinity, vMax = -Infinity;
+  for (const row of grid) {
+    for (const v of row) {
+      if (!isNaN(v)) { vMin = Math.min(vMin, v); vMax = Math.max(vMax, v); }
+    }
+  }
+  if (vMin === Infinity) return;
+  const vRange = vMax - vMin || 1;
+
+  // Color function
+  function getColor(val) {
+    if (isNaN(val)) return '#161b22';
+    const t = (val - vMin) / vRange;
+    if (mode === 'pwin') {
+      // Diverging: red(0) → white(0.5) → blue(1)
+      if (t < 0.5) {
+        const s = t * 2;
+        const r = 248, g = Math.round(81 + s * 174), b = Math.round(73 + s * 182);
+        return `rgb(${r},${g},${b})`;
+      } else {
+        const s = (t - 0.5) * 2;
+        const r = Math.round(255 - s * 167), g = Math.round(255 - s * 89), b = 255;
+        return `rgb(${r},${g},${b})`;
+      }
+    } else {
+      // Sequential: dark → bright accent
+      const r = Math.round(13 + t * 75);
+      const g = Math.round(17 + t * 149);
+      const b = Math.round(23 + t * 232);
+      return `rgb(${r},${g},${b})`;
+    }
+  }
+
+  // Draw cells
+  for (let y = 0; y <= yMax; y++) {
+    for (let x = 0; x <= xMax; x++) {
+      const px = labelPad + x * cellSize;
+      const py = y * cellSize;
+      ctx.fillStyle = getColor(grid[y][x]);
+      ctx.fillRect(px, py, cellSize - 1, cellSize - 1);
+    }
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '9px monospace';
+  ctx.textAlign = 'center';
+  for (let x = 0; x <= xMax; x++) {
+    ctx.fillText(x, labelPad + x * cellSize + cellSize / 2, (yMax + 1) * cellSize + 12);
+  }
+  ctx.textAlign = 'right';
+  for (let y = 0; y <= yMax; y++) {
+    ctx.fillText(y, labelPad - 4, y * cellSize + cellSize / 2 + 3);
+  }
+
+  // Hover tooltip
+  canvas.onmousemove = e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) - labelPad;
+    const my = e.clientY - rect.top;
+    const cx = Math.floor(mx / cellSize);
+    const cy = Math.floor(my / cellSize);
+    const tip = document.getElementById('heatmapTooltip');
+    if (cx >= 0 && cx <= xMax && cy >= 0 && cy <= yMax && !isNaN(grid[cy][cx])) {
+      const v = grid[cy][cx];
+      const label = mode === 'a1' ? 'A₁' : 'P(win)';
+      tip.textContent = `${xLabel}=${cx}, ${yLabel}=${cy} → ${label}=${v.toFixed(4)}`;
+    } else {
+      tip.textContent = '';
+    }
+  };
+  canvas.onmouseleave = () => { document.getElementById('heatmapTooltip').textContent = ''; };
+
+  // Legend
+  const legend = document.getElementById('heatmapLegend');
+  const label = mode === 'a1' ? 'A₁ (tension at each state)' : 'P(win) from each state';
+  legend.innerHTML = `<div style="margin-bottom: 4px;"><strong>${label}</strong></div>
+    <div>Max: ${vMax.toFixed(4)}</div>
+    <div>Min: ${vMin.toFixed(4)}</div>
+    <div style="margin-top: 6px; font-size: 10px;">
+      ${xLabel} → X axis<br>
+      ${yLabel} → Y axis<br>
+      <span style="color: var(--text2);">Hover for details</span>
+    </div>`;
 }
 
 function generateInsight(gds, wgds, agency, profile, comp) {
