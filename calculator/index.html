@@ -558,21 +558,29 @@ function coinDuelGame(params) {
     const [s1, s2, b1, b2] = state;
     if (s1 >= roundsToWin || s2 >= roundsToWin) return [];
 
-    const nActions = maxWager;
-    const oppProbs = new Array(nActions).fill(1 / nActions);
+    const maxW1 = b1 > 0 ? Math.min(maxWager, b1) : 0;
+    const maxW2 = b2 > 0 ? Math.min(maxWager, b2) : 0;
+
+    if (maxW1 === 0 || maxW2 === 0) {
+      const nb1 = Math.min(b1 + refill, maxBank);
+      const nb2 = Math.min(b2 + refill, maxBank);
+      if (maxW1 === 0 && maxW2 === 0) return [[1.0, [s1, s2, nb1, nb2]]];
+      if (maxW1 === 0) return [[1.0, [s1, s2 + 1, nb1, nb2]]];
+      return [[1.0, [s1 + 1, s2, nb1, nb2]]];
+    }
+
+    // Match Python: iterate ALL action indices, clamp each individually
+    const oppProb = 1 / maxWager;
     const allTrans = [];
 
-    for (let a1 = 0; a1 < nActions; a1++) {
-      const p1prob = policy[a1];
-      if (p1prob < 1e-10) continue;
+    for (let a1 = 0; a1 < maxWager; a1++) {
+      if (policy[a1] < 1e-10) continue;
       const w1 = effectiveWager(a1, b1);
-      for (let a2 = 0; a2 < nActions; a2++) {
-        const p2prob = oppProbs[a2];
-        if (p2prob < 1e-10) continue;
+      for (let a2 = 0; a2 < maxWager; a2++) {
         const w2 = effectiveWager(a2, b2);
         const trans = transitionsForWagerPair(state, w1, w2);
         for (const [prob, next] of trans) {
-          allTrans.push([p1prob * p2prob * prob, next]);
+          allTrans.push([policy[a1] * oppProb * prob, next]);
         }
       }
     }
