@@ -483,7 +483,9 @@ function updateButtonLabels() {
   const braceBtn = document.getElementById('btn-brace');
   const dodgeBtn = document.getElementById('btn-dodge');
 
-  blastBtn.innerHTML = `Blast<br><small>${ps.blastDmg} dmg @ ${Math.round(ps.blastHit*100)}%</small><span class="key">1</span>`;
+  const hasReflect = currentEnemy.traits.includes('reflect') && !ps.reflectImmune;
+  const blastWarn = hasReflect ? ' \u26a0\ufe0f' : '';
+  blastBtn.innerHTML = `Blast${blastWarn}<br><small>${ps.blastDmg} dmg @ ${Math.round(ps.blastHit*100)}%</small><span class="key">1</span>`;
   zapBtn.innerHTML = `Zap<br><small>${ps.zapDmg} dmg, sure</small><span class="key">2</span>`;
   braceBtn.innerHTML = `Brace<br><small>reduce ${ps.braceReduce}</small><span class="key">3</span>`;
   const dodgePct = Math.round(ps.dodgeChance * 100);
@@ -776,6 +778,17 @@ function playerAction(action) {
 }
 
 // === FIGHT END ===
+function getStrategyHint(enemy) {
+  const hasRef = enemy.traits.includes('reflect');
+  const hasAoE = enemy.traits.includes('aoe');
+  const hasHeal = enemy.traits.includes('healer');
+  if (hasRef && hasAoE) return 'Use Zap to attack (Blast gets reflected) and Brace to defend (Dodge is nullified by AoE).';
+  if (hasRef) return 'Avoid Blast \u2014 it gets reflected! Use Zap to attack safely.';
+  if (hasAoE) return 'Dodge won\'t work against AoE. Use Brace to defend.';
+  if (hasHeal) return 'This enemy heals every turn. Deal damage fast!';
+  return '';
+}
+
 function endFight() {
   const won = state.hp2 <= 0 && state.hp1 > 0;
   const lost = state.hp1 <= 0;
@@ -806,7 +819,10 @@ function endFight() {
       title.textContent = 'Run Over';
       title.className = 'result-title lose';
       sub.textContent = `Defeated by ${currentEnemy.name}`;
-      detail.textContent = `Cleared ${run.fight}/${ENEMIES.length} fights`;
+      let hint = `Cleared ${run.fight}/${ENEMIES.length} fights`;
+      const hints = getStrategyHint(currentEnemy);
+      if (hints) hint += `<br><br><em>Tip: ${hints}</em>`;
+      detail.innerHTML = hint;
     }
     nextBtn.style.display = 'none';
   } else {
