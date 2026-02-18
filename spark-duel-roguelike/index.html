@@ -487,7 +487,7 @@ function updateButtonLabels() {
   zapBtn.innerHTML = `Zap<br><small>${ps.zapDmg} dmg, sure</small><span class="key">2</span>`;
   braceBtn.innerHTML = `Brace<br><small>reduce ${ps.braceReduce}</small><span class="key">3</span>`;
   const dodgePct = Math.round(ps.dodgeChance * 100);
-  const dodgeInfo = currentEnemy.traits.includes('aoe') && !ps.reflectImmune
+  const dodgeInfo = currentEnemy.traits.includes('aoe')
     ? '0% (AoE!)'
     : `${dodgePct}% evade`;
   dodgeBtn.innerHTML = `Dodge<br><small>${dodgeInfo}</small><span class="key">4</span>`;
@@ -557,16 +557,16 @@ function resolvePlayerAttack(attack, defend) {
     // Reflector: if enemy braces, reflect damage back
     if (hasReflect && defend === 'brace') {
       const reflectDmg = 3;
-      return { dmgDef: 0, dmgAtk: reflectDmg, desc: 'reflected', extra: ` \u2014 <span class="reflect">Reflected ${reflectDmg} dmg!</span>` };
+      return { dmgDef: 0, dmgAtk: reflectDmg, desc: 'reflected', extra: '' };
     }
 
     if (defend === 'brace') {
       const reduced = ps.piercing ? 0 : BASE.braceReduce;
       return { dmgDef: Math.max(0, ps.blastDmg - reduced), dmgAtk: 0, desc: 'hit-brace', extra: ps.piercing ? ' (pierced!)' : '' };
     }
-    // Dodge
-    return Math.random() < ps.dodgeChance
-      ? { dmgDef: 0, dmgAtk: ps.dodgeCounter, desc: 'dodged', extra: '' }
+    // Enemy dodges (uses base dodge chance, not player's)
+    return Math.random() < BASE.dodgeChance
+      ? { dmgDef: 0, dmgAtk: BASE.dodgeCounter, desc: 'dodged', extra: '' }
       : { dmgDef: ps.blastDmg, dmgAtk: 0, desc: 'hit-dodge-fail', extra: '' };
   } else {
     // Zap
@@ -576,9 +576,9 @@ function resolvePlayerAttack(attack, defend) {
       if (ps.lifesteal && dmg > 0) healPlayer = 1;
       return { dmgDef: dmg, dmgAtk: 0, desc: 'zap-brace', extra: '', healPlayer };
     }
-    const dodged = Math.random() < ps.dodgeChance;
+    const dodged = Math.random() < BASE.dodgeChance;
     if (dodged) {
-      return { dmgDef: 0, dmgAtk: ps.dodgeCounter, desc: 'zap-dodged', extra: '', healPlayer: 0 };
+      return { dmgDef: 0, dmgAtk: BASE.dodgeCounter, desc: 'zap-dodged', extra: '', healPlayer: 0 };
     }
     if (ps.lifesteal) healPlayer = 1;
     return { dmgDef: ps.zapDmg, dmgAtk: 0, desc: 'zap-hit', extra: '', healPlayer };
@@ -621,23 +621,23 @@ function resolveEnemyAttack(attack, defend) {
 
 function describeResult(who, attack, result) {
   const atkName = attack === 'blast' ? 'Blast' : 'Zap';
-  const attacker = who === 'you' ? 'You' : currentEnemy.name;
+  const atkPoss = who === 'you' ? 'Your' : `${currentEnemy.name}'s`;
   const defender = who === 'you' ? currentEnemy.name : 'You';
 
   let base = '';
   switch (result.desc) {
-    case 'miss': base = `${attacker} used ${atkName} \u2014 <span class="miss">missed!</span>`; break;
-    case 'reflected': base = `${attacker}'s ${atkName} hits the ${defender}'s guard`; break;
-    case 'hit-brace': base = `${attacker}'s ${atkName} hits! ${defender} braced \u2014 <span class="hit">${result.dmgDef} dmg</span>`; break;
-    case 'hit-dodge-fail': base = `${attacker}'s ${atkName} hits! Dodge failed \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
-    case 'dodged': base = `${attacker}'s ${atkName} \u2014 <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`; break;
-    case 'aoe-hit': base = `${attacker}'s ${atkName} \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
-    case 'aoe-zap': base = `${attacker}'s Zap \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
+    case 'miss': base = `${atkPoss} ${atkName} \u2014 <span class="miss">missed!</span>`; break;
+    case 'reflected': base = `${atkPoss} ${atkName} was <span class="reflect">reflected \u2014 ${result.dmgAtk} dmg to you!</span>`; break;
+    case 'hit-brace': base = `${atkPoss} ${atkName} hits! ${defender} braced \u2014 <span class="hit">${result.dmgDef} dmg</span>`; break;
+    case 'hit-dodge-fail': base = `${atkPoss} ${atkName} hits! Dodge failed \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
+    case 'dodged': base = `${atkPoss} ${atkName} \u2014 <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`; break;
+    case 'aoe-hit': base = `${atkPoss} ${atkName} \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
+    case 'aoe-zap': base = `${atkPoss} Zap \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
     case 'zap-brace': base = result.dmgDef > 0
-      ? `${attacker}'s Zap \u2014 braced, <span class="hit">${result.dmgDef} dmg</span>`
-      : `${attacker}'s Zap \u2014 braced, <span class="miss">absorbed</span>`; break;
-    case 'zap-dodged': base = `${attacker}'s Zap \u2014 <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`; break;
-    case 'zap-hit': base = `${attacker}'s Zap \u2014 <span class="hit">${result.dmgDef} dmg</span>`; break;
+      ? `${atkPoss} Zap \u2014 braced, <span class="hit">${result.dmgDef} dmg</span>`
+      : `${atkPoss} Zap \u2014 braced, <span class="miss">absorbed</span>`; break;
+    case 'zap-dodged': base = `${atkPoss} Zap \u2014 <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`; break;
+    case 'zap-hit': base = `${atkPoss} Zap \u2014 <span class="hit">${result.dmgDef} dmg</span>`; break;
   }
   return base + (result.extra || '');
 }
