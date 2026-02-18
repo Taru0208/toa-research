@@ -140,7 +140,7 @@ h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; lett
 </head>
 <body>
 <h1>Spark Duel</h1>
-<p class="subtitle">Attack, then defend — best of 3</p>
+<p class="subtitle">Attack & defend — best of 3</p>
 
 <div class="game-wrap">
   <div class="match-bar">
@@ -224,7 +224,7 @@ const CFG = {
 };
 
 let state, round, phase, diff, waitingFor, logEntries;
-let matchScore, setStats, gameOver;
+let matchScore, setStats, gameOver, firstAttacker;
 
 function initSet() {
   state = { hp1: CFG.maxHp, hp2: CFG.maxHp, cd1: 0, cd2: 0 };
@@ -239,6 +239,7 @@ function newMatch() {
   document.getElementById('result-overlay').classList.remove('show');
   matchScore = { p1: 0, p2: 0 };
   gameOver = false;
+  firstAttacker = 'p1';  // Player attacks first in set 1
   diff = [...document.querySelectorAll('.diff-btn')].findIndex(b => b.classList.contains('active'));
   if (diff < 0) diff = 1;
   initSet();
@@ -329,7 +330,9 @@ function describeResult(who, attack, result) {
     case 'hit-brace': return `${attacker}'s ${atkName} hits! ${defender} braced — <span class="hit">${result.dmgDef} dmg</span>`;
     case 'hit-dodge-fail': return `${attacker}'s ${atkName} hits! Dodge failed — <span class="hit">${result.dmgDef} dmg!</span>`;
     case 'dodged': return `${attacker}'s ${atkName} — <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`;
-    case 'zap-brace': return `${attacker}'s Zap — braced, <span class="miss">absorbed</span>`;
+    case 'zap-brace': return result.dmgDef > 0
+      ? `${attacker}'s Zap — braced, <span class="hit">${result.dmgDef} dmg</span>`
+      : `${attacker}'s Zap — braced, <span class="miss">absorbed</span>`;
     case 'zap-dodged': return `${attacker}'s Zap — <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`;
     case 'zap-hit': return `${attacker}'s Zap — <span class="hit">${result.dmgDef} dmg</span>`;
   }
@@ -405,7 +408,8 @@ function endSet() {
       title.textContent = 'Set Lost'; title.className = 'result-title lose';
     }
     sub.textContent = `Score: ${matchScore.p1} - ${matchScore.p2}`;
-    detail.textContent = `${setStats.rounds} rounds — First to ${CFG.setsToWin} wins`;
+    const initNote = firstAttacker === 'p2' ? ' (AI struck first)' : '';
+    detail.textContent = `${setStats.rounds} rounds${initNote} — First to ${CFG.setsToWin} wins`;
     nextBtn.style.display = '';
     nextBtn.textContent = 'Next Set';
   }
@@ -417,6 +421,8 @@ function endSet() {
 function nextSet() {
   document.getElementById('result-overlay').classList.remove('show');
   if (gameOver) { newMatch(); return; }
+  // Alternate first attacker each set
+  firstAttacker = firstAttacker === 'p1' ? 'p2' : 'p1';
   initSet();
   updateUI();
   setPhase('chip');
@@ -433,12 +439,15 @@ function setPhase(p) {
     flashHP('p1'); flashHP('p2');
 
     const msg = `<span class="chip">Chip damage: both -${CFG.chip}</span>`;
-    arenaPhase(`Round ${round}`);
+    const turnNote = firstAttacker === 'p2' ? ' (AI first)' : '';
+    arenaPhase(`Round ${round}${turnNote}`);
     arenaMsg(msg);
     addLog(`<span class="round-tag">R${round}</span> ${msg}`);
 
     if (checkEnd()) return;
-    setTimeout(() => setPhase('p1-attack'), 600);
+    // First attacker goes first
+    const nextPhase = firstAttacker === 'p1' ? 'p1-attack' : 'p2-attack';
+    setTimeout(() => setPhase(nextPhase), 600);
 
   } else if (p === 'p1-attack') {
     arenaPhase(`Round ${round} — Your Attack`);
@@ -484,7 +493,9 @@ function playerAction(action) {
     addLog(desc);
 
     if (checkEnd()) return;
-    setTimeout(() => setPhase('p2-attack'), 800);
+    // After player attacks: if player attacked first, AI attacks next; otherwise end round
+    const next = firstAttacker === 'p1' ? 'p2-attack' : 'end-round';
+    setTimeout(() => setPhase(next), 800);
 
   } else if (phase === 'p2-attack' && (action === 'brace' || action === 'dodge')) {
     if (action === 'dodge') setStats.dodges++;
@@ -503,7 +514,9 @@ function playerAction(action) {
     addLog(desc);
 
     if (checkEnd()) return;
-    setTimeout(() => setPhase('end-round'), 800);
+    // After AI attacks: if AI attacked first, player attacks next; otherwise end round
+    const next = firstAttacker === 'p2' ? 'p1-attack' : 'end-round';
+    setTimeout(() => setPhase(next), 800);
   }
 }
 
@@ -522,7 +535,7 @@ document.addEventListener('keydown', e => {
 
 // Init
 matchScore = { p1: 0, p2: 0 };
-gameOver = false; diff = 1;
+gameOver = false; diff = 1; firstAttacker = 'p1';
 initSet();
 updateUI();
 setPhase('chip');
