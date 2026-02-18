@@ -1,0 +1,916 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Spark Duel: Gauntlet</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #080a12; color: #c8ccd4;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  min-height: 100vh; user-select: none; -webkit-user-select: none;
+}
+h1 { font-size: 22px; font-weight: 700; margin: 14px 0 2px; color: #e0e4ec; letter-spacing: -0.5px; }
+.subtitle { font-size: 12px; color: #607090; margin-bottom: 10px; }
+.game-wrap { width: 420px; max-width: 95vw; display: flex; flex-direction: column; align-items: center; }
+
+/* Run progress bar */
+.run-bar {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 6px 8px; margin-bottom: 6px;
+}
+.run-node {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid #1a2040;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #506080; background: #0c0e18;
+  position: relative; transition: all 0.3s;
+}
+.run-node.current { border-color: #4070b0; color: #90b0e0; background: #141830; box-shadow: 0 0 8px rgba(64,112,176,0.3); }
+.run-node.won { border-color: #30a060; color: #50c080; background: #0e1820; }
+.run-node.lost { border-color: #a03030; color: #e05050; background: #180e0e; }
+.run-connector { width: 16px; height: 2px; background: #1a2040; }
+.run-connector.done { background: #30a060; }
+.run-node .trait-icon { font-size: 14px; line-height: 1; }
+
+/* Enemy info */
+.enemy-info {
+  width: 100%; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 8px;
+  padding: 8px 12px; margin-bottom: 6px; text-align: center;
+}
+.enemy-name { font-size: 16px; font-weight: 700; color: #e0a050; }
+.enemy-traits { font-size: 11px; color: #708098; margin-top: 2px; }
+.enemy-trait-tag {
+  display: inline-block; padding: 1px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; margin: 0 2px;
+}
+.trait-reflect { background: #1a1040; color: #a070e0; border: 1px solid #3020604d; }
+.trait-aoe { background: #401a10; color: #e07040; border: 1px solid #60302040; }
+.trait-healer { background: #0a2020; color: #40c080; border: 1px solid #20604040; }
+.trait-tank { background: #102030; color: #5090c0; border: 1px solid #20406040; }
+.trait-fragile { background: #301010; color: #c06060; border: 1px solid #60202040; }
+
+/* HP bars */
+.hp-section { display: flex; justify-content: space-between; width: 100%; margin-bottom: 6px; gap: 8px; }
+.hp-wrap { flex: 1; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 8px; padding: 7px 10px; }
+.hp-label { font-size: 10px; color: #506080; text-transform: uppercase; letter-spacing: 0.5px; }
+.hp-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+.hp-track { flex: 1; height: 10px; background: #151828; border-radius: 5px; overflow: hidden; position: relative; }
+.hp-fill { height: 100%; border-radius: 5px; transition: width 0.4s ease; }
+.hp-fill.p1 { background: linear-gradient(90deg, #2060a0, #40a0f0); }
+.hp-fill.p2 { background: linear-gradient(90deg, #a02020, #f04040); }
+.hp-num { font-size: 15px; font-weight: 700; min-width: 28px; text-align: right; }
+.hp-num.p1 { color: #5090e0; }
+.hp-num.p2 { color: #e05050; }
+
+/* Cooldown */
+.cd-row { display: flex; justify-content: space-between; width: 100%; margin-bottom: 6px; gap: 8px; }
+.cd-box { flex: 1; text-align: center; font-size: 11px; color: #506080; padding: 3px; }
+.cd-box .ready { color: #50c070; }
+.cd-box .cooling { color: #c07030; }
+
+/* Arena */
+.arena {
+  width: 100%; background: #0c0e18; border: 1px solid #1a1e2e; border-radius: 10px;
+  padding: 12px; margin-bottom: 6px; min-height: 100px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.arena-phase { font-size: 10px; color: #506878; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+.arena-msg { font-size: 14px; color: #a0b0c8; text-align: center; line-height: 1.6; }
+.arena-msg .hit { color: #f06060; font-weight: 600; }
+.arena-msg .miss { color: #607090; }
+.arena-msg .dodge { color: #50c0a0; font-weight: 600; }
+.arena-msg .counter { color: #f0a030; font-weight: 600; }
+.arena-msg .chip { color: #707888; }
+.arena-msg .reflect { color: #a070e0; font-weight: 600; }
+.arena-msg .aoe { color: #e07040; font-weight: 600; }
+.arena-msg .heal { color: #40c080; font-weight: 600; }
+
+/* Damage flash */
+@keyframes flash-dmg { 0%,100% { box-shadow: none; } 50% { box-shadow: inset 0 0 20px rgba(240,80,80,0.3); } }
+.hp-wrap.flash { animation: flash-dmg 0.3s ease; }
+
+/* Actions */
+.actions { display: flex; gap: 6px; width: 100%; margin-bottom: 6px; }
+.action-btn {
+  flex: 1; padding: 12px 6px; border: 2px solid #1a2040; border-radius: 10px;
+  background: #0e1020; color: #b0b8c8; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; text-align: center; line-height: 1.3;
+}
+.action-btn:hover:not(:disabled) {
+  border-color: #3060a0; background: #141830; color: #e0e8f0; transform: translateY(-1px);
+}
+.action-btn:active:not(:disabled) { transform: translateY(0); }
+.action-btn:disabled { opacity: 0.25; cursor: default; }
+.action-btn .key { display: block; font-size: 10px; color: #506080; margin-top: 2px; }
+.action-btn.atk { border-color: #28203e; }
+.action-btn.atk:hover:not(:disabled) { border-color: #7040b0; }
+.action-btn.def { border-color: #1a3038; }
+.action-btn.def:hover:not(:disabled) { border-color: #30a080; }
+
+/* Log */
+.log {
+  width: 100%; background: #0a0c16; border: 1px solid #141828; border-radius: 7px;
+  padding: 8px; max-height: 110px; overflow-y: auto; margin-bottom: 8px;
+}
+.log-entry { font-size: 11px; color: #4a5a6a; padding: 2px 0; border-bottom: 1px solid #0e1220; }
+.log-entry:last-child { border-bottom: none; }
+.log-entry .round-tag { color: #506878; font-weight: 600; }
+
+/* Player upgrades display */
+.upgrades-display {
+  width: 100%; display: flex; flex-wrap: wrap; gap: 4px;
+  justify-content: center; margin-bottom: 6px; min-height: 20px;
+}
+.upgrade-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; font-weight: 600; background: #141830; border: 1px solid #2040604d;
+  color: #70a0c0;
+}
+
+/* Result overlay */
+.result-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(4,6,12,0.92);
+  z-index: 100; flex-direction: column; align-items: center; justify-content: center;
+}
+.result-overlay.show { display: flex; }
+.result-box {
+  background: #0c0e18; border: 1px solid #1a2040; border-radius: 14px;
+  padding: 24px 32px; text-align: center; max-width: 380px; width: 90%;
+}
+.result-title { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.result-title.win { color: #50a0f0; }
+.result-title.lose { color: #e05050; }
+.result-sub { font-size: 14px; color: #708098; margin-bottom: 4px; }
+.result-detail { font-size: 13px; color: #506878; margin-bottom: 14px; line-height: 1.5; }
+.result-btn {
+  padding: 9px 24px; border: 2px solid #304080; border-radius: 8px;
+  background: #141830; color: #90b0e0; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; margin: 4px;
+}
+.result-btn:hover { background: #1c2440; border-color: #4070b0; }
+.result-btn.secondary { border-color: #1a2040; color: #607090; }
+
+/* Upgrade selection screen */
+.upgrade-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(4,6,12,0.95);
+  z-index: 100; flex-direction: column; align-items: center; justify-content: center;
+}
+.upgrade-overlay.show { display: flex; }
+.upgrade-panel {
+  background: #0c0e18; border: 1px solid #1a2040; border-radius: 14px;
+  padding: 24px; text-align: center; max-width: 420px; width: 90%;
+}
+.upgrade-title { font-size: 20px; font-weight: 700; color: #e0e4ec; margin-bottom: 4px; }
+.upgrade-subtitle { font-size: 12px; color: #607090; margin-bottom: 16px; }
+.upgrade-cards { display: flex; flex-direction: column; gap: 8px; }
+.upgrade-card {
+  padding: 12px 16px; border: 2px solid #1a2040; border-radius: 10px;
+  background: #0e1020; cursor: pointer; transition: all 0.2s; text-align: left;
+}
+.upgrade-card:hover {
+  border-color: #4070b0; background: #141830; transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(40,80,160,0.2);
+}
+.upgrade-card-name { font-size: 14px; font-weight: 700; color: #a0c0e0; margin-bottom: 3px; }
+.upgrade-card-desc { font-size: 12px; color: #708098; line-height: 1.4; }
+.upgrade-card-hint { font-size: 10px; color: #4a6070; margin-top: 4px; font-style: italic; }
+
+/* Next enemy preview */
+.next-enemy-hint { font-size: 11px; color: #607090; margin-top: 12px; padding-top: 8px; border-top: 1px solid #1a2040; }
+.next-enemy-hint strong { color: #e0a050; }
+
+/* Bottom controls */
+.bottom-row { display: flex; gap: 6px; width: 100%; margin-bottom: 6px; align-items: center; }
+.spacer { flex: 1; }
+.ctrl-btn {
+  padding: 5px 14px; border: 1px solid #1a2040; border-radius: 5px;
+  background: #0e1020; color: #708098; font-size: 11px; cursor: pointer;
+  transition: all 0.15s;
+}
+.ctrl-btn:hover { border-color: #3060a0; color: #c0c8d8; }
+
+/* Run summary */
+.run-summary { text-align: left; width: 100%; }
+.run-summary-line { font-size: 12px; color: #607890; padding: 2px 0; }
+.run-summary-line.highlight { color: #a0c0e0; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Spark Duel: Gauntlet</h1>
+<p class="subtitle">5 fights, 4 upgrades, 1 run</p>
+
+<div class="game-wrap">
+  <!-- Run progress -->
+  <div class="run-bar" id="run-bar"></div>
+
+  <!-- Enemy info -->
+  <div class="enemy-info" id="enemy-info">
+    <div class="enemy-name" id="enemy-name">Scout</div>
+    <div class="enemy-traits" id="enemy-traits"></div>
+  </div>
+
+  <!-- Player upgrades -->
+  <div class="upgrades-display" id="upgrades-display"></div>
+
+  <!-- HP bars -->
+  <div class="hp-section">
+    <div class="hp-wrap" id="hp1-wrap">
+      <div class="hp-label">Your HP</div>
+      <div class="hp-row">
+        <div class="hp-track"><div class="hp-fill p1" id="hp1-bar"></div></div>
+        <div class="hp-num p1" id="hp1-num">7</div>
+      </div>
+    </div>
+    <div class="hp-wrap" id="hp2-wrap">
+      <div class="hp-label">Enemy HP</div>
+      <div class="hp-row">
+        <div class="hp-track"><div class="hp-fill p2" id="hp2-bar"></div></div>
+        <div class="hp-num p2" id="hp2-num">7</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cooldown -->
+  <div class="cd-row">
+    <div class="cd-box" id="cd1-box">Blast: <span class="ready">Ready</span></div>
+    <div class="cd-box" id="cd2-box">Enemy Blast: <span class="ready">Ready</span></div>
+  </div>
+
+  <!-- Arena -->
+  <div class="arena" id="arena">
+    <div class="arena-phase" id="arena-phase">Fight 1</div>
+    <div class="arena-msg" id="arena-msg">Choose your attack!</div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions" id="actions">
+    <button class="action-btn atk" id="btn-blast" onclick="playerAction('blast')">
+      Blast<br><small>4 dmg @ 60%</small><span class="key">1</span>
+    </button>
+    <button class="action-btn atk" id="btn-zap" onclick="playerAction('zap')">
+      Zap<br><small>2 dmg, sure</small><span class="key">2</span>
+    </button>
+    <button class="action-btn def" id="btn-brace" onclick="playerAction('brace')">
+      Brace<br><small>reduce 1</small><span class="key">3</span>
+    </button>
+    <button class="action-btn def" id="btn-dodge" onclick="playerAction('dodge')">
+      Dodge<br><small>40% evade</small><span class="key">4</span>
+    </button>
+  </div>
+
+  <div class="bottom-row">
+    <div class="spacer"></div>
+    <button class="ctrl-btn" onclick="newRun()">New Run</button>
+  </div>
+
+  <div class="log" id="log"></div>
+</div>
+
+<!-- Fight result overlay -->
+<div class="result-overlay" id="result-overlay">
+  <div class="result-box">
+    <div class="result-title" id="result-title">Victory!</div>
+    <div class="result-sub" id="result-sub"></div>
+    <div class="result-detail" id="result-detail"></div>
+    <div id="result-buttons">
+      <button class="result-btn" id="result-next" onclick="advanceRun()">Continue</button>
+      <button class="result-btn secondary" onclick="newRun()">New Run</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upgrade selection overlay -->
+<div class="upgrade-overlay" id="upgrade-overlay">
+  <div class="upgrade-panel">
+    <div class="upgrade-title">Choose an Upgrade</div>
+    <div class="upgrade-subtitle" id="upgrade-subtitle">Pick one to carry forward</div>
+    <div class="upgrade-cards" id="upgrade-cards"></div>
+    <div class="next-enemy-hint" id="next-enemy-hint"></div>
+  </div>
+</div>
+
+<script>
+// === CONFIGURATION ===
+const BASE = {
+  maxHp: 7, chip: 1, blastDmg: 4, blastHit: 0.60,
+  zapDmg: 2, braceReduce: 1, dodgeChance: 0.40, dodgeCounter: 1
+};
+
+// === ENEMY DEFINITIONS ===
+const ENEMIES = [
+  {
+    name: 'Scout',
+    traits: [],
+    hp: 5,
+    desc: 'Fragile. An easy warm-up.',
+    atkStyle: { blastPref: 0.5 },
+    defStyle: { bracePref: 0.4 }
+  },
+  {
+    name: 'Guardian',
+    traits: ['reflect'],
+    hp: 7,
+    desc: 'Reflects Blast damage back at you.',
+    atkStyle: { blastPref: 0.55 },
+    defStyle: { bracePref: 0.6 }
+  },
+  {
+    name: 'Warden',
+    traits: ['aoe'],
+    hp: 7,
+    desc: 'Area attacks — Dodge is useless.',
+    atkStyle: { blastPref: 0.6 },
+    defStyle: { bracePref: 0.5 }
+  },
+  {
+    name: 'Overlord',
+    traits: ['reflect', 'aoe'],
+    hp: 7,
+    desc: 'Reflects Blast AND nullifies Dodge.',
+    atkStyle: { blastPref: 0.55 },
+    defStyle: { bracePref: 0.5 }
+  },
+  {
+    name: 'Titan',
+    traits: ['reflect', 'aoe', 'healer'],
+    hp: 8,
+    desc: 'Reflects, AoE, and heals each turn.',
+    atkStyle: { blastPref: 0.6 },
+    defStyle: { bracePref: 0.55 }
+  }
+];
+
+// === UPGRADE POOL ===
+const ALL_UPGRADES = [
+  { id: 'zap_plus', name: 'Zap+', desc: 'Zap deals 3 damage instead of 2.', hint: 'Great vs Reflectors', apply: s => { s.zapDmg = 3; } },
+  { id: 'blast_acc', name: 'Sharpshooter', desc: 'Blast accuracy: 60% \u2192 75%.', hint: 'More reliable Blasts', apply: s => { s.blastHit = 0.75; } },
+  { id: 'piercing', name: 'Piercing', desc: 'Blast ignores Brace reduction.', hint: 'Punish Brace-heavy enemies', apply: s => { s.piercing = true; } },
+  { id: 'dodge_plus', name: 'Swift', desc: 'Dodge chance: 40% \u2192 55%.', hint: 'Useless vs AoE enemies', apply: s => { s.dodgeChance = 0.55; } },
+  { id: 'brace_plus', name: 'Fortify', desc: 'Brace reduces 2 damage instead of 1.', hint: 'Essential vs AoE enemies', apply: s => { s.braceReduce = 2; } },
+  { id: 'counter_plus', name: 'Riposte', desc: 'Dodge counter deals 2 damage.', hint: 'Useless vs AoE enemies', apply: s => { s.dodgeCounter = 2; } },
+  { id: 'hp_plus', name: 'Tough', desc: '+2 max HP.', hint: 'Always useful', apply: s => { s.hpBonus = (s.hpBonus || 0) + 2; } },
+  { id: 'regen', name: 'Regeneration', desc: 'Heal 1 HP at the start of each round.', hint: 'Sustain in long fights', apply: s => { s.regen = (s.regen || 0) + 1; } },
+  { id: 'lifesteal', name: 'Lifesteal', desc: 'Zap heals you for 1 HP on hit.', hint: 'Synergizes with Zap+', apply: s => { s.lifesteal = true; } },
+  { id: 'reflect_immune', name: 'Spell Shield', desc: 'Your Blasts cannot be reflected.', hint: 'Neutralizes Reflectors', apply: s => { s.reflectImmune = true; } },
+];
+
+// === RUN STATE ===
+let run = {
+  fight: 0,       // current fight index (0-4)
+  results: [],    // 'win' | 'lose' per fight
+  upgrades: [],   // upgrade ids collected
+  playerStats: {} // modified stats from upgrades
+};
+
+// === COMBAT STATE ===
+let state, round, phase, waitingFor, logEntries;
+let currentEnemy;
+
+function getPlayerMaxHp() {
+  return BASE.maxHp + (run.playerStats.hpBonus || 0);
+}
+
+function getPlayerStats() {
+  return {
+    maxHp: getPlayerMaxHp(),
+    chip: BASE.chip,
+    blastDmg: run.playerStats.blastDmg || BASE.blastDmg,
+    blastHit: run.playerStats.blastHit || BASE.blastHit,
+    zapDmg: run.playerStats.zapDmg || BASE.zapDmg,
+    braceReduce: run.playerStats.braceReduce || BASE.braceReduce,
+    dodgeChance: run.playerStats.dodgeChance || BASE.dodgeChance,
+    dodgeCounter: run.playerStats.dodgeCounter || BASE.dodgeCounter,
+    piercing: run.playerStats.piercing || false,
+    regen: run.playerStats.regen || 0,
+    lifesteal: run.playerStats.lifesteal || false,
+    reflectImmune: run.playerStats.reflectImmune || false,
+  };
+}
+
+// === INIT ===
+function newRun() {
+  document.getElementById('result-overlay').classList.remove('show');
+  document.getElementById('upgrade-overlay').classList.remove('show');
+  run = { fight: 0, results: [], upgrades: [], playerStats: {} };
+  startFight();
+}
+
+function startFight() {
+  currentEnemy = ENEMIES[run.fight];
+  const ps = getPlayerStats();
+
+  state = {
+    hp1: ps.maxHp,
+    hp2: currentEnemy.hp,
+    cd1: 0, cd2: 0,
+    maxHp1: ps.maxHp,
+    maxHp2: currentEnemy.hp
+  };
+  round = 1;
+  phase = 'idle';
+  waitingFor = null;
+  logEntries = [];
+
+  document.getElementById('log').innerHTML = '';
+  updateRunBar();
+  updateEnemyInfo();
+  updateUpgradesDisplay();
+  updateUI();
+  updateButtonLabels();
+  setPhase('chip');
+}
+
+function updateRunBar() {
+  const bar = document.getElementById('run-bar');
+  let html = '';
+  for (let i = 0; i < ENEMIES.length; i++) {
+    if (i > 0) {
+      const connDone = i <= run.fight && run.results[i-1] === 'win';
+      html += `<div class="run-connector${connDone ? ' done' : ''}"></div>`;
+    }
+    let cls = 'run-node';
+    if (i === run.fight) cls += ' current';
+    else if (run.results[i] === 'win') cls += ' won';
+    else if (run.results[i] === 'lose') cls += ' lost';
+
+    const e = ENEMIES[i];
+    let icon = (i + 1).toString();
+    if (e.traits.includes('reflect') && e.traits.includes('aoe')) icon = '\u2623';
+    else if (e.traits.includes('reflect')) icon = '\ud83d\udee1';
+    else if (e.traits.includes('aoe')) icon = '\ud83d\udd25';
+    else if (e.hp < 7) icon = '\u2b50';
+    if (e.traits.includes('healer')) icon = '\ud83d\udc80';
+
+    html += `<div class="${cls}"><span class="trait-icon">${icon}</span></div>`;
+  }
+  bar.innerHTML = html;
+}
+
+function updateEnemyInfo() {
+  document.getElementById('enemy-name').textContent = currentEnemy.name;
+  const traitsEl = document.getElementById('enemy-traits');
+  let tags = '';
+  if (currentEnemy.hp < 7) tags += '<span class="enemy-trait-tag trait-fragile">Fragile</span>';
+  if (currentEnemy.hp > 7) tags += '<span class="enemy-trait-tag trait-tank">Tough</span>';
+  if (currentEnemy.traits.includes('reflect')) tags += '<span class="enemy-trait-tag trait-reflect">Reflector</span>';
+  if (currentEnemy.traits.includes('aoe')) tags += '<span class="enemy-trait-tag trait-aoe">AoE</span>';
+  if (currentEnemy.traits.includes('healer')) tags += '<span class="enemy-trait-tag trait-healer">Healer</span>';
+  if (!tags) tags = '<span style="color:#506878">No special traits</span>';
+  traitsEl.innerHTML = tags;
+}
+
+function updateUpgradesDisplay() {
+  const el = document.getElementById('upgrades-display');
+  if (run.upgrades.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  el.innerHTML = run.upgrades.map(id => {
+    const u = ALL_UPGRADES.find(u => u.id === id);
+    return `<span class="upgrade-tag">${u ? u.name : id}</span>`;
+  }).join('');
+}
+
+function updateButtonLabels() {
+  const ps = getPlayerStats();
+  const blastBtn = document.getElementById('btn-blast');
+  const zapBtn = document.getElementById('btn-zap');
+  const braceBtn = document.getElementById('btn-brace');
+  const dodgeBtn = document.getElementById('btn-dodge');
+
+  blastBtn.innerHTML = `Blast<br><small>${ps.blastDmg} dmg @ ${Math.round(ps.blastHit*100)}%</small><span class="key">1</span>`;
+  zapBtn.innerHTML = `Zap<br><small>${ps.zapDmg} dmg, sure</small><span class="key">2</span>`;
+  braceBtn.innerHTML = `Brace<br><small>reduce ${ps.braceReduce}</small><span class="key">3</span>`;
+  const dodgePct = Math.round(ps.dodgeChance * 100);
+  const dodgeInfo = currentEnemy.traits.includes('aoe') && !ps.reflectImmune
+    ? '0% (AoE!)'
+    : `${dodgePct}% evade`;
+  dodgeBtn.innerHTML = `Dodge<br><small>${dodgeInfo}</small><span class="key">4</span>`;
+}
+
+function updateUI() {
+  const pct1 = Math.max(0, state.hp1 / state.maxHp1 * 100);
+  const pct2 = Math.max(0, state.hp2 / state.maxHp2 * 100);
+  document.getElementById('hp1-bar').style.width = pct1 + '%';
+  document.getElementById('hp2-bar').style.width = pct2 + '%';
+  document.getElementById('hp1-num').textContent = Math.max(0, state.hp1);
+  document.getElementById('hp2-num').textContent = Math.max(0, state.hp2);
+
+  const cd1 = document.getElementById('cd1-box');
+  const cd2 = document.getElementById('cd2-box');
+  cd1.innerHTML = state.cd1 > 0 ? 'Blast: <span class="cooling">Cooldown</span>' : 'Blast: <span class="ready">Ready</span>';
+  cd2.innerHTML = state.cd2 > 0 ? 'Enemy Blast: <span class="cooling">Cooldown</span>' : 'Enemy Blast: <span class="ready">Ready</span>';
+}
+
+function flashHP(who) {
+  const el = document.getElementById(who === 'p1' ? 'hp1-wrap' : 'hp2-wrap');
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+function setButtons(mode) {
+  const btns = { blast: document.getElementById('btn-blast'), zap: document.getElementById('btn-zap'),
+                 brace: document.getElementById('btn-brace'), dodge: document.getElementById('btn-dodge') };
+
+  if (mode === 'attack') {
+    btns.blast.style.display = ''; btns.zap.style.display = '';
+    btns.brace.style.display = 'none'; btns.dodge.style.display = 'none';
+    btns.blast.disabled = state.cd1 > 0;
+    btns.zap.disabled = false;
+    waitingFor = 'attack';
+  } else if (mode === 'defend') {
+    btns.blast.style.display = 'none'; btns.zap.style.display = 'none';
+    btns.brace.style.display = ''; btns.dodge.style.display = '';
+    btns.brace.disabled = false; btns.dodge.disabled = false;
+    waitingFor = 'defend';
+  } else {
+    Object.values(btns).forEach(b => { b.disabled = true; b.style.display = ''; });
+    waitingFor = null;
+  }
+}
+
+function addLog(text) {
+  logEntries.push(text);
+  const el = document.getElementById('log');
+  el.innerHTML = logEntries.map(t => `<div class="log-entry">${t}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function arenaMsg(html) { document.getElementById('arena-msg').innerHTML = html; }
+function arenaPhase(text) { document.getElementById('arena-phase').textContent = text; }
+
+// === COMBAT RESOLUTION ===
+function resolvePlayerAttack(attack, defend) {
+  const ps = getPlayerStats();
+  const hasReflect = currentEnemy.traits.includes('reflect') && !ps.reflectImmune;
+
+  if (attack === 'blast') {
+    const hit = Math.random() < ps.blastHit;
+    if (!hit) return { dmgDef: 0, dmgAtk: 0, desc: 'miss', extra: '' };
+
+    // Reflector: if enemy braces, reflect damage back
+    if (hasReflect && defend === 'brace') {
+      const reflectDmg = 3;
+      return { dmgDef: 0, dmgAtk: reflectDmg, desc: 'reflected', extra: ` \u2014 <span class="reflect">Reflected ${reflectDmg} dmg!</span>` };
+    }
+
+    if (defend === 'brace') {
+      const reduced = ps.piercing ? 0 : BASE.braceReduce;
+      return { dmgDef: Math.max(0, ps.blastDmg - reduced), dmgAtk: 0, desc: 'hit-brace', extra: ps.piercing ? ' (pierced!)' : '' };
+    }
+    // Dodge
+    return Math.random() < ps.dodgeChance
+      ? { dmgDef: 0, dmgAtk: ps.dodgeCounter, desc: 'dodged', extra: '' }
+      : { dmgDef: ps.blastDmg, dmgAtk: 0, desc: 'hit-dodge-fail', extra: '' };
+  } else {
+    // Zap
+    let healPlayer = 0;
+    if (defend === 'brace') {
+      const dmg = Math.max(0, ps.zapDmg - BASE.braceReduce);
+      if (ps.lifesteal && dmg > 0) healPlayer = 1;
+      return { dmgDef: dmg, dmgAtk: 0, desc: 'zap-brace', extra: '', healPlayer };
+    }
+    const dodged = Math.random() < ps.dodgeChance;
+    if (dodged) {
+      return { dmgDef: 0, dmgAtk: ps.dodgeCounter, desc: 'zap-dodged', extra: '', healPlayer: 0 };
+    }
+    if (ps.lifesteal) healPlayer = 1;
+    return { dmgDef: ps.zapDmg, dmgAtk: 0, desc: 'zap-hit', extra: '', healPlayer };
+  }
+}
+
+function resolveEnemyAttack(attack, defend) {
+  const ps = getPlayerStats();
+  const hasAoE = currentEnemy.traits.includes('aoe');
+
+  if (attack === 'blast') {
+    const hit = Math.random() < BASE.blastHit;
+    if (!hit) return { dmgDef: 0, dmgAtk: 0, desc: 'miss', extra: '' };
+
+    if (defend === 'brace') {
+      return { dmgDef: Math.max(0, BASE.blastDmg - ps.braceReduce), dmgAtk: 0, desc: 'hit-brace', extra: '' };
+    }
+    // Dodge — AoE negates dodge
+    if (hasAoE) {
+      return { dmgDef: BASE.blastDmg, dmgAtk: 0, desc: 'aoe-hit', extra: ' \u2014 <span class="aoe">AoE ignores Dodge!</span>' };
+    }
+    return Math.random() < ps.dodgeChance
+      ? { dmgDef: 0, dmgAtk: ps.dodgeCounter, desc: 'dodged', extra: '' }
+      : { dmgDef: BASE.blastDmg, dmgAtk: 0, desc: 'hit-dodge-fail', extra: '' };
+  } else {
+    // Zap
+    if (defend === 'brace') {
+      return { dmgDef: Math.max(0, BASE.zapDmg - ps.braceReduce), dmgAtk: 0, desc: 'zap-brace', extra: '' };
+    }
+    if (hasAoE) {
+      return { dmgDef: BASE.zapDmg, dmgAtk: 0, desc: 'aoe-zap', extra: ' \u2014 <span class="aoe">AoE ignores Dodge!</span>' };
+    }
+    const dodged = Math.random() < ps.dodgeChance;
+    if (dodged) {
+      return { dmgDef: 0, dmgAtk: ps.dodgeCounter, desc: 'zap-dodged', extra: '' };
+    }
+    return { dmgDef: BASE.zapDmg, dmgAtk: 0, desc: 'zap-hit', extra: '' };
+  }
+}
+
+function describeResult(who, attack, result) {
+  const atkName = attack === 'blast' ? 'Blast' : 'Zap';
+  const attacker = who === 'you' ? 'You' : currentEnemy.name;
+  const defender = who === 'you' ? currentEnemy.name : 'You';
+
+  let base = '';
+  switch (result.desc) {
+    case 'miss': base = `${attacker} used ${atkName} \u2014 <span class="miss">missed!</span>`; break;
+    case 'reflected': base = `${attacker}'s ${atkName} hits the ${defender}'s guard`; break;
+    case 'hit-brace': base = `${attacker}'s ${atkName} hits! ${defender} braced \u2014 <span class="hit">${result.dmgDef} dmg</span>`; break;
+    case 'hit-dodge-fail': base = `${attacker}'s ${atkName} hits! Dodge failed \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
+    case 'dodged': base = `${attacker}'s ${atkName} \u2014 <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`; break;
+    case 'aoe-hit': base = `${attacker}'s ${atkName} \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
+    case 'aoe-zap': base = `${attacker}'s Zap \u2014 <span class="hit">${result.dmgDef} dmg!</span>`; break;
+    case 'zap-brace': base = result.dmgDef > 0
+      ? `${attacker}'s Zap \u2014 braced, <span class="hit">${result.dmgDef} dmg</span>`
+      : `${attacker}'s Zap \u2014 braced, <span class="miss">absorbed</span>`; break;
+    case 'zap-dodged': base = `${attacker}'s Zap \u2014 <span class="dodge">dodged!</span> <span class="counter">Counter ${result.dmgAtk}!</span>`; break;
+    case 'zap-hit': base = `${attacker}'s Zap \u2014 <span class="hit">${result.dmgDef} dmg</span>`; break;
+  }
+  return base + (result.extra || '');
+}
+
+// === AI ===
+function aiChooseAttack() {
+  const avail = state.cd2 > 0 ? ['zap'] : ['blast', 'zap'];
+  const pref = currentEnemy.atkStyle.blastPref;
+  if (avail.includes('blast')) {
+    // Lethal check
+    if (state.hp1 <= BASE.blastDmg) return 'blast';
+    return Math.random() < pref ? 'blast' : 'zap';
+  }
+  return 'zap';
+}
+
+function aiChooseDefend(playerAttack) {
+  const pref = currentEnemy.defStyle.bracePref;
+  // Adjust based on player attack
+  const adjustedPref = playerAttack === 'blast' ? pref + 0.1 : pref - 0.05;
+  return Math.random() < Math.max(0.2, Math.min(0.8, adjustedPref)) ? 'brace' : 'dodge';
+}
+
+// === PHASE MACHINE ===
+function checkEnd() {
+  if (state.hp1 <= 0 || state.hp2 <= 0) {
+    setTimeout(() => endFight(), 500);
+    return true;
+  }
+  return false;
+}
+
+function setPhase(p) {
+  phase = p;
+
+  if (p === 'chip') {
+    // Chip damage
+    state.hp1 = Math.max(0, state.hp1 - BASE.chip);
+    state.hp2 = Math.max(0, state.hp2 - BASE.chip);
+
+    // Regen for player
+    const ps = getPlayerStats();
+    if (ps.regen > 0 && state.hp1 > 0) {
+      state.hp1 = Math.min(state.maxHp1, state.hp1 + ps.regen);
+    }
+
+    // Healer trait for enemy
+    if (currentEnemy.traits.includes('healer') && state.hp2 > 0) {
+      state.hp2 = Math.min(state.maxHp2, state.hp2 + 1);
+    }
+
+    updateUI();
+    flashHP('p1'); flashHP('p2');
+
+    let msg = `<span class="chip">Both -${BASE.chip}</span>`;
+    if (ps.regen > 0) msg += ` | <span class="heal">You regen +${ps.regen}</span>`;
+    if (currentEnemy.traits.includes('healer')) msg += ` | <span class="heal">${currentEnemy.name} heals +1</span>`;
+
+    arenaPhase(`Fight ${run.fight + 1} \u2014 Round ${round}`);
+    arenaMsg(msg);
+    addLog(`<span class="round-tag">R${round}</span> ${msg}`);
+
+    if (checkEnd()) return;
+    setTimeout(() => setPhase('p1-attack'), 600);
+
+  } else if (p === 'p1-attack') {
+    arenaPhase(`Round ${round} \u2014 Your Attack`);
+    arenaMsg('Choose your attack!');
+    setButtons('attack');
+
+  } else if (p === 'p2-attack') {
+    setButtons('none');
+    const aiAtk = aiChooseAttack();
+    const atkName = aiAtk === 'blast' ? 'Blast' : 'Zap';
+    if (aiAtk === 'blast') state.cd2 = 1; else state.cd2 = Math.max(0, state.cd2 - 1);
+    updateUI();
+
+    arenaPhase(`Round ${round} \u2014 ${currentEnemy.name} uses ${atkName}!`);
+    arenaMsg(`${currentEnemy.name} attacks with <strong>${atkName}</strong>. Choose your defense!`);
+    waitingFor = aiAtk;
+    setButtons('defend');
+
+  } else if (p === 'end-round') {
+    round++;
+    setTimeout(() => setPhase('chip'), 400);
+  }
+}
+
+function playerAction(action) {
+  if (phase === 'p1-attack' && (action === 'blast' || action === 'zap')) {
+    if (action === 'blast' && state.cd1 > 0) return;
+    if (action === 'blast') state.cd1 = 1;
+    else state.cd1 = Math.max(0, state.cd1 - 1);
+
+    const aiDef = aiChooseDefend(action);
+    const result = resolvePlayerAttack(action, aiDef);
+
+    state.hp2 = Math.max(0, state.hp2 - result.dmgDef);
+    state.hp1 = Math.max(0, state.hp1 - result.dmgAtk);
+
+    // Lifesteal
+    if (result.healPlayer && state.hp1 > 0) {
+      state.hp1 = Math.min(state.maxHp1, state.hp1 + result.healPlayer);
+    }
+
+    if (result.dmgDef > 0) flashHP('p2');
+    if (result.dmgAtk > 0) flashHP('p1');
+
+    updateUI();
+    let desc = describeResult('you', action, result);
+    if (result.healPlayer) desc += ` <span class="heal">(+${result.healPlayer} HP)</span>`;
+    arenaMsg(desc);
+    addLog(desc);
+
+    if (checkEnd()) return;
+    setTimeout(() => setPhase('p2-attack'), 800);
+
+  } else if (phase === 'p2-attack' && (action === 'brace' || action === 'dodge')) {
+    const aiAtk = waitingFor;
+    const result = resolveEnemyAttack(aiAtk, action);
+
+    state.hp1 = Math.max(0, state.hp1 - result.dmgDef);
+    state.hp2 = Math.max(0, state.hp2 - result.dmgAtk);
+
+    if (result.dmgDef > 0) flashHP('p1');
+    if (result.dmgAtk > 0) flashHP('p2');
+
+    updateUI();
+    const desc = describeResult('ai', aiAtk, result);
+    arenaMsg(desc);
+    addLog(desc);
+
+    if (checkEnd()) return;
+    setTimeout(() => setPhase('end-round'), 800);
+  }
+}
+
+// === FIGHT END ===
+function endFight() {
+  const won = state.hp2 <= 0 && state.hp1 > 0;
+  const lost = state.hp1 <= 0;
+  const draw = state.hp1 <= 0 && state.hp2 <= 0;
+
+  run.results[run.fight] = (won ? 'win' : 'lose');
+  updateRunBar();
+
+  const overlay = document.getElementById('result-overlay');
+  const title = document.getElementById('result-title');
+  const sub = document.getElementById('result-sub');
+  const detail = document.getElementById('result-detail');
+  const nextBtn = document.getElementById('result-next');
+
+  const isLastFight = run.fight >= ENEMIES.length - 1;
+  const isRunOver = lost || draw || isLastFight;
+
+  if (isRunOver) {
+    if (won && isLastFight) {
+      title.textContent = 'Gauntlet Complete!';
+      title.className = 'result-title win';
+      sub.textContent = `${run.results.filter(r => r === 'win').length}/${ENEMIES.length} victories`;
+      const upgradeStr = run.upgrades.length > 0
+        ? run.upgrades.map(id => ALL_UPGRADES.find(u => u.id === id)?.name || id).join(', ')
+        : 'None';
+      detail.textContent = `Upgrades: ${upgradeStr}`;
+    } else {
+      title.textContent = 'Run Over';
+      title.className = 'result-title lose';
+      sub.textContent = `Defeated by ${currentEnemy.name}`;
+      detail.textContent = `Cleared ${run.fight}/${ENEMIES.length} fights`;
+    }
+    nextBtn.style.display = 'none';
+  } else {
+    title.textContent = 'Victory!';
+    title.className = 'result-title win';
+    sub.textContent = `${currentEnemy.name} defeated`;
+    detail.textContent = `${round} rounds \u2014 ${ENEMIES.length - run.fight - 1} fights remaining`;
+    nextBtn.textContent = 'Choose Upgrade';
+    nextBtn.style.display = '';
+  }
+
+  overlay.classList.add('show');
+  setButtons('none');
+}
+
+// === UPGRADE SELECTION ===
+function advanceRun() {
+  document.getElementById('result-overlay').classList.remove('show');
+  showUpgradeSelection();
+}
+
+function showUpgradeSelection() {
+  // Pick 3 random upgrades not yet taken
+  const available = ALL_UPGRADES.filter(u => !run.upgrades.includes(u.id));
+  const offered = shuffleArray(available).slice(0, 3);
+
+  const cardsEl = document.getElementById('upgrade-cards');
+  cardsEl.innerHTML = offered.map(u => `
+    <div class="upgrade-card" onclick="selectUpgrade('${u.id}')">
+      <div class="upgrade-card-name">${u.name}</div>
+      <div class="upgrade-card-desc">${u.desc}</div>
+      <div class="upgrade-card-hint">${u.hint}</div>
+    </div>
+  `).join('');
+
+  // Next enemy hint
+  const nextEnemy = ENEMIES[run.fight + 1];
+  const hintEl = document.getElementById('next-enemy-hint');
+  if (nextEnemy) {
+    let traitStr = nextEnemy.traits.length > 0
+      ? nextEnemy.traits.map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(', ')
+      : 'No special traits';
+    hintEl.innerHTML = `Next: <strong>${nextEnemy.name}</strong> \u2014 ${traitStr}`;
+  } else {
+    hintEl.innerHTML = '';
+  }
+
+  document.getElementById('upgrade-subtitle').textContent = `Fight ${run.fight + 1} cleared \u2014 pick one`;
+  document.getElementById('upgrade-overlay').classList.add('show');
+}
+
+function selectUpgrade(id) {
+  const upgrade = ALL_UPGRADES.find(u => u.id === id);
+  if (!upgrade) return;
+
+  run.upgrades.push(id);
+  upgrade.apply(run.playerStats);
+
+  document.getElementById('upgrade-overlay').classList.remove('show');
+  run.fight++;
+  startFight();
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// === KEYBOARD ===
+document.addEventListener('keydown', e => {
+  // Upgrade selection
+  if (document.getElementById('upgrade-overlay').classList.contains('show')) {
+    if (e.key === '1' || e.key === '2' || e.key === '3') {
+      const cards = document.querySelectorAll('.upgrade-card');
+      const idx = parseInt(e.key) - 1;
+      if (cards[idx]) cards[idx].click();
+    }
+    return;
+  }
+
+  // Result overlay
+  const resultOverlay = document.getElementById('result-overlay');
+  if (resultOverlay.classList.contains('show')) {
+    if (e.key === 'n' || e.key === 'N' || e.key === 'Enter') {
+      const nextBtn = document.getElementById('result-next');
+      if (nextBtn.style.display !== 'none') advanceRun();
+      else newRun();
+    }
+    return;
+  }
+
+  // Combat
+  if (e.key === '1') playerAction('blast');
+  else if (e.key === '2') playerAction('zap');
+  else if (e.key === '3') playerAction('brace');
+  else if (e.key === '4') playerAction('dodge');
+});
+
+// === INIT ===
+newRun();
+</script>
+</body>
+</html>
